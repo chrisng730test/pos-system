@@ -34,10 +34,18 @@ export function useCart() {
     setCart(prev => prev.filter(c => c.item.id !== itemId));
   };
 
+  const setQuantity = (itemId: string, qty: number) => {
+    if (qty < 1) {
+      removeFromCart(itemId);
+      return;
+    }
+    setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, quantity: qty } : c));
+  };
+
   const clearCart = () => setCart([]);
 
   const total = cart.reduce((sum, c) => sum + c.item.price * c.quantity, 0);
   const itemCount = cart.reduce((sum, c) => sum + c.quantity, 0);
 
-  return { cart, addToCart, decreaseQuantity, removeFromCart, clearCart, total, itemCount };
+  return { cart, addToCart, decreaseQuantity, setQuantity, removeFromCart, clearCart, total, itemCount };
 }

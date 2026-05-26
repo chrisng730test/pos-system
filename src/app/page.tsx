@@ -21,6 +21,7 @@ interface CartContentProps {
   itemCount: number;
   onAdd: (item: MenuItem) => void;
   onDecrease: (id: string) => void;
+  onSetQuantity: (id: string, qty: number) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
   onCharge: () => void;
@@ -33,6 +34,7 @@ function CartContent({
   itemCount,
   onAdd,
   onDecrease,
+  onSetQuantity,
   onRemove,
   onClear,
   onCharge,
@@ -88,9 +90,18 @@ function CartContent({
                   >
                     −
                   </button>
-                  <span className="w-6 text-center font-semibold text-sm select-none">
-                    {quantity}
-                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={e => {
+                      const v = parseInt(e.target.value, 10);
+                      if (!isNaN(v)) onSetQuantity(item.id, v);
+                    }}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) onRemove(item.id); }}
+                    className="w-10 text-center font-semibold text-sm border border-slate-200 rounded-md focus:outline-none focus:border-emerald-400 py-0.5"
+                  />
                   <button
                     onClick={() => onAdd(item)}
                     aria-label={`Increase ${item.name}`}
@@ -348,7 +359,7 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
 
 export default function POSPage() {
   const { items, categories, loaded } = useItems();
-  const { cart, addToCart, decreaseQuantity, removeFromCart, clearCart, total, itemCount } =
+  const { cart, addToCart, decreaseQuantity, setQuantity, removeFromCart, clearCart, total, itemCount } =
     useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [cartOpen, setCartOpen] = useState(false);
@@ -400,6 +411,7 @@ export default function POSPage() {
     itemCount,
     onAdd: addToCart,
     onDecrease: decreaseQuantity,
+    onSetQuantity: setQuantity,
     onRemove: removeFromCart,
     onClear: clearCart,
     onCharge: handleCharge,
