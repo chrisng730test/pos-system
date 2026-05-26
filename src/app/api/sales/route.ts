@@ -69,10 +69,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(parsed);
     }
 
+    // Full list — join items and include all columns
     const sales = db
-      .prepare('SELECT * FROM sales ORDER BY created_at DESC LIMIT 50')
-      .all();
-    return NextResponse.json(sales);
+      .prepare(
+        `SELECT s.id, s.receipt_no, s.payment_method, s.total, s.item_count, s.created_at,
+                json_group_array(json_object(
+                  'item_id',    si.item_id,
+                  'item_name',  si.item_name,
+                  'item_price', si.item_price,
+                  'quantity',   si.quantity
+                )) AS items
+         FROM sales s
+         LEFT JOIN sale_items si ON si.sale_id = s.id
+         GROUP BY s.id
+         ORDER BY s.created_at DESC`,
+      )
+      .all() as Array<Record<string, unknown>>;
+
+    const parsed = sales.map(s => ({ ...s, items: JSON.parse(s.items as string) }));
+    return NextResponse.json(parsed);
   } catch (err) {
     console.error('[GET /api/sales]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

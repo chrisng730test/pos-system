@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useItems } from '@/hooks/useItems';
 import { useCart } from '@/hooks/useCart';
@@ -22,6 +22,7 @@ interface CartContentProps {
   itemCount: number;
   onAdd: (item: MenuItem) => void;
   onDecrease: (id: string) => void;
+  onSetQuantity: (id: string, qty: number) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
   onCharge: () => void;
@@ -34,6 +35,7 @@ function CartContent({
   itemCount,
   onAdd,
   onDecrease,
+  onSetQuantity,
   onRemove,
   onClear,
   onCharge,
@@ -89,9 +91,18 @@ function CartContent({
                   >
                     −
                   </button>
-                  <span className="w-6 text-center font-semibold text-sm select-none">
-                    {quantity}
-                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={e => {
+                      const v = parseInt(e.target.value, 10);
+                      if (!isNaN(v)) onSetQuantity(item.id, v);
+                    }}
+                    onFocus={e => e.target.select()}
+                    onBlur={e => { if (!e.target.value || parseInt(e.target.value) < 1) onRemove(item.id); }}
+                    className="w-10 text-center font-semibold text-sm border border-slate-200 rounded-md focus:outline-none focus:border-emerald-400 py-0.5"
+                  />
                   <button
                     onClick={() => onAdd(item)}
                     aria-label={`Increase ${item.name}`}
@@ -146,9 +157,9 @@ function PaymentModal({
   onCancel: () => void;
 }) {
   const [step, setStep] = useState<'method' | 'cash' | 'ewallet'>('method');
-  const [cashAmount, setCashAmount] = useState('');
+  const [tendered, setTendered] = useState('');
 
-  const paid = parseFloat(cashAmount) || 0;
+  const paid = parseFloat(tendered) || 0;
   const change = paid - total;
   const valid = paid >= total;
 
@@ -166,28 +177,30 @@ function PaymentModal({
           <h2 className="text-white text-xl font-bold">Payment</h2>
           <p className="text-emerald-100 text-sm mt-0.5">
             {step === 'method' && 'Select payment method'}
-            {step === 'cash' && 'Enter amount received from customer'}
+            {step === 'cash' && 'Enter cash received'}
             {step === 'ewallet' && 'Confirm e-Wallet payment'}
           </p>
         </div>
 
+        {/* Step: method selection */}
         {step === 'method' && (
           <div className="p-6 space-y-4">
             <div className="flex justify-between items-center pb-4 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Amount Due</span>
               <span className="text-2xl font-bold text-slate-900">RM{total.toFixed(2)}</span>
             </div>
+            <p className="text-sm text-slate-500 font-medium">Choose payment method:</p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setStep('cash')}
-                className="flex flex-col items-center gap-2 py-6 rounded-2xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition"
+                className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition"
               >
                 <span className="text-3xl">💵</span>
                 <span className="font-bold text-slate-700">Cash</span>
               </button>
               <button
                 onClick={() => setStep('ewallet')}
-                className="flex flex-col items-center gap-2 py-6 rounded-2xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition"
+                className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition"
               >
                 <span className="text-3xl">📱</span>
                 <span className="font-bold text-slate-700">e-Wallet</span>
@@ -202,6 +215,7 @@ function PaymentModal({
           </div>
         )}
 
+        {/* Step: cash */}
         {step === 'cash' && (
           <div className="p-6 space-y-5">
             <div className="flex justify-between items-center pb-4 border-b border-slate-100">
@@ -216,8 +230,8 @@ function PaymentModal({
                 type="number"
                 min={0}
                 step="0.01"
-                value={cashAmount}
-                onChange={e => setCashAmount(e.target.value)}
+                value={tendered}
+                onChange={e => setTendered(e.target.value)}
                 placeholder={total.toFixed(2)}
                 autoFocus
                 className="w-full border-2 border-slate-200 focus:border-emerald-400 rounded-xl px-4 py-3 text-2xl font-bold text-right text-slate-900 focus:outline-none transition"
@@ -227,9 +241,9 @@ function PaymentModal({
               {suggestions.map(amt => (
                 <button
                   key={amt}
-                  onClick={() => setCashAmount(amt.toFixed(2))}
+                  onClick={() => setTendered(amt.toFixed(2))}
                   className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${
-                    parseFloat(cashAmount) === amt
+                    parseFloat(tendered) === amt
                       ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
                       : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-700'
                   }`}
@@ -255,7 +269,7 @@ function PaymentModal({
                 onClick={() => setStep('method')}
                 className="flex-1 py-3.5 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition"
               >
-                Back
+                ← Back
               </button>
               <button
                 onClick={() => valid && onConfirm(paid, 'cash')}
@@ -268,19 +282,19 @@ function PaymentModal({
           </div>
         )}
 
+        {/* Step: ewallet */}
         {step === 'ewallet' && (
           <div className="p-6 space-y-5">
             <div className="flex justify-between items-center pb-4 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Amount Due</span>
               <span className="text-2xl font-bold text-slate-900">RM{total.toFixed(2)}</span>
             </div>
-            <div className="rounded-2xl border-2 border-blue-300 bg-blue-50 p-5 text-center space-y-2">
-              <div className="text-4xl">📱</div>
-              <p className="font-bold text-blue-700 text-base">Reminder to Staff</p>
-              <p className="text-blue-600 text-sm leading-relaxed">
-                Please ensure e-Wallet transfer of{' '}
-                <span className="font-bold text-blue-800">RM{total.toFixed(2)}</span> has been
-                received before proceeding.
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl px-5 py-4 text-center space-y-2">
+              <p className="text-blue-800 font-bold text-base">⚠️ Staff Check Required</p>
+              <p className="text-blue-700 text-sm">
+                Please ensure{' '}
+                <span className="font-bold">RM{total.toFixed(2)}</span>{' '}
+                has been received in the e-Wallet app before confirming.
               </p>
             </div>
             <div className="flex gap-3">
@@ -288,7 +302,7 @@ function PaymentModal({
                 onClick={() => setStep('method')}
                 className="flex-1 py-3.5 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition"
               >
-                Back
+                ← Back
               </button>
               <button
                 onClick={() => onConfirm(total, 'ewallet')}
@@ -317,6 +331,11 @@ function printReceipt(data: ReceiptData) {
     )
     .join('');
 
+  const paymentRows = data.paymentMethod === 'ewallet'
+    ? `<div class="row blue"><span>📱 e-Wallet</span><span>RM${data.total.toFixed(2)}</span></div>`
+    : `<div class="row muted"><span>Cash</span><span>RM${data.paid.toFixed(2)}</span></div>
+  <div class="row green"><span>Change</span><span>RM${data.change.toFixed(2)}</span></div>`;
+
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Receipt ${data.receiptNo}</title>
 <style>
@@ -326,6 +345,7 @@ function printReceipt(data: ReceiptData) {
   .divider{border:none;border-top:2px dashed #aaa;margin:10px 0}
   .big{font-size:16px;font-weight:bold}
   .muted{color:#666} .green{color:#059669;font-weight:bold}
+  .blue{color:#2563eb;font-weight:bold}
   .tag{display:inline-block;background:#f1f5f9;padding:2px 10px;border-radius:999px;font-size:12px}
 </style></head>
 <body>
@@ -338,11 +358,7 @@ function printReceipt(data: ReceiptData) {
   ${itemRows}
   <hr class="divider">
   <div class="row big"><span>TOTAL</span><span>RM${data.total.toFixed(2)}</span></div>
-  ${data.paymentMethod === 'cash'
-    ? `<div class="row muted"><span>Cash</span><span>RM${data.paid.toFixed(2)}</span></div>
-       <div class="row green"><span>Change</span><span>RM${data.change.toFixed(2)}</span></div>`
-    : `<div class="row" style="color:#2563eb"><span>e-Wallet</span><span>RM${data.total.toFixed(2)}</span></div>`
-  }
+  ${paymentRows}
   <hr class="divider">
   <div class="center muted" style="font-size:12px">Thank you! Please come again.</div>
 </body></html>`;
@@ -352,27 +368,11 @@ function printReceipt(data: ReceiptData) {
   win.document.write(html);
   win.document.close();
   win.focus();
-  win.onafterprint = () => win.close();
-  setTimeout(() => win.print(), 400);
+  setTimeout(() => { win.print(); win.close(); }, 300);
 }
 
 /* ── Receipt Modal ──────────────────────────────────── */
 function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => void }) {
-  const [printing, setPrinting] = useState(false);
-  const printTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (printTimerRef.current !== null) clearTimeout(printTimerRef.current);
-    };
-  }, []);
-
-  const handlePrint = () => {
-    if (printing) return;
-    setPrinting(true);
-    printReceipt(data);
-    printTimerRef.current = setTimeout(() => setPrinting(false), 3000);
-  };
   const dt = new Date(data.createdAt);
   const dateStr = dt.toLocaleDateString('en-MY', { year: 'numeric', month: 'short', day: 'numeric' });
   const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
@@ -404,7 +404,12 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
               <span>TOTAL</span>
               <span>RM{data.total.toFixed(2)}</span>
             </div>
-            {data.paymentMethod === 'cash' ? (
+            {data.paymentMethod === 'ewallet' ? (
+              <div className="flex justify-between text-blue-600 font-bold">
+                <span>📱 e-Wallet</span>
+                <span>RM{data.total.toFixed(2)}</span>
+              </div>
+            ) : (
               <>
                 <div className="flex justify-between text-slate-600">
                   <span>Cash</span>
@@ -415,11 +420,6 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
                   <span>RM{data.change.toFixed(2)}</span>
                 </div>
               </>
-            ) : (
-              <div className="flex justify-between text-blue-600 font-semibold">
-                <span>e-Wallet</span>
-                <span>RM{data.total.toFixed(2)}</span>
-              </div>
             )}
           </div>
           <div className="border-t-2 border-dashed border-slate-200 my-3" />
@@ -427,11 +427,10 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button
-            onClick={handlePrint}
-            disabled={printing}
-            className="flex-1 py-3 rounded-xl bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 text-sm"
+            onClick={() => printReceipt(data)}
+            className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 text-sm"
           >
-            {printing ? 'Printing…' : '🖨 Print'}
+            🖨 Print
           </button>
           <button
             onClick={onClose}
@@ -447,7 +446,7 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
 
 export default function POSPage() {
   const { items, categories, loaded } = useItems();
-  const { cart, addToCart, decreaseQuantity, removeFromCart, clearCart, total, itemCount } =
+  const { cart, addToCart, decreaseQuantity, setQuantity, removeFromCart, clearCart, total, itemCount } =
     useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [cartOpen, setCartOpen] = useState(false);
@@ -477,7 +476,7 @@ export default function POSPage() {
     fetch('/api/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, payment_method: paymentMethod, total, items: saleItems }),
+      body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, total, items: saleItems, payment_method: paymentMethod }),
     }).catch(console.error);
 
     setReceiptData({ receiptNo, createdAt: now.toISOString(), items: [...cart], total, paid, change: paid - total, paymentMethod });
@@ -497,6 +496,7 @@ export default function POSPage() {
     itemCount,
     onAdd: addToCart,
     onDecrease: decreaseQuantity,
+    onSetQuantity: setQuantity,
     onRemove: removeFromCart,
     onClear: clearCart,
     onCharge: handleCharge,
@@ -513,22 +513,37 @@ export default function POSPage() {
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-4 flex items-center justify-between shadow-lg flex-shrink-0">
+      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-3 flex items-center justify-between shadow-lg flex-shrink-0">
         <h1 className="text-xl font-bold tracking-wide flex items-center gap-2"><span className="text-2xl leading-none">🌿</span> ZYN POS</h1>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1">
           <Link
             href="/dashboard"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium backdrop-blur-sm"
+            className="flex flex-col items-center gap-0.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium"
           >
-            📊 Dashboard
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path d="M12 9a1 1 0 0 1-1-1V3c0-.552.45-1.007.997-.93a7.004 7.004 0 0 1 5.933 5.933c.077.547-.378.997-.93.997h-5ZM8.5 4.034C8.5 3.482 8.053 3.031 7.504 3.1a7.001 7.001 0 0 0-5.404 9.252c.178.458.66.648 1.103.498l4.803-1.616a1 1 0 0 0 .644-.943V4.034ZM6.988 12.986A1 1 0 0 0 6 14c0 .552.449 1.008.997.934a7.009 7.009 0 0 0 4.52-2.783.951.951 0 0 0-.172-1.29l-3.695-3.076-.662 5.2Z" />
+            </svg>
+            <span className="text-xs leading-none">Dashboard</span>
+          </Link>
+          <Link
+            href="/transactions"
+            className="flex flex-col items-center gap-0.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M4 3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4Zm0 6a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H4Zm-1 7a1 1 0 0 1 1-1h12a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs leading-none">Transactions</span>
           </Link>
           <Link
             href="/admin"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium backdrop-blur-sm"
+            className="flex flex-col items-center gap-0.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium"
           >
-            ⚙ Items
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.422.587l1.25-.834a1 1 0 0 1 1.262.125l.962.962a1 1 0 0 1 .125 1.262l-.834 1.25c.245.45.443.925.587 1.422l1.473.294a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.422l.834 1.25a1 1 0 0 1-.125 1.262l-.962.962a1 1 0 0 1-1.262.125l-1.25-.834a6.953 6.953 0 0 1-1.422.587l-.294 1.473a1 1 0 0 1-.98.804H9.32a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.422-.587l-1.25.834a1 1 0 0 1-1.262-.125l-.962-.962a1 1 0 0 1-.125-1.262l.834-1.25a6.957 6.957 0 0 1-.587-1.422L1.804 11.32A1 1 0 0 1 1 10.34V8.98a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.422l-.834-1.25a1 1 0 0 1 .125-1.262l.962-.962A1 1 0 0 1 5.38 2.684l1.25.834a6.957 6.957 0 0 1 1.422-.587l.289-1.127ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs leading-none">Items</span>
           </Link>
-        </div>
+        </nav>
       </header>
 
       {/* Body */}
