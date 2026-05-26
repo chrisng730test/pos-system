@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useItems } from '@/hooks/useItems';
 import { useCart } from '@/hooks/useCart';
@@ -352,11 +352,27 @@ function printReceipt(data: ReceiptData) {
   win.document.write(html);
   win.document.close();
   win.focus();
-  setTimeout(() => { win.print(); win.close(); }, 300);
+  win.onafterprint = () => win.close();
+  setTimeout(() => win.print(), 400);
 }
 
 /* ── Receipt Modal ──────────────────────────────────── */
 function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => void }) {
+  const [printing, setPrinting] = useState(false);
+  const printTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (printTimerRef.current !== null) clearTimeout(printTimerRef.current);
+    };
+  }, []);
+
+  const handlePrint = () => {
+    if (printing) return;
+    setPrinting(true);
+    printReceipt(data);
+    printTimerRef.current = setTimeout(() => setPrinting(false), 3000);
+  };
   const dt = new Date(data.createdAt);
   const dateStr = dt.toLocaleDateString('en-MY', { year: 'numeric', month: 'short', day: 'numeric' });
   const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
@@ -411,10 +427,11 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
         </div>
         <div className="flex gap-3 px-5 pb-5">
           <button
-            onClick={() => printReceipt(data)}
-            className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 text-sm"
+            onClick={handlePrint}
+            disabled={printing}
+            className="flex-1 py-3 rounded-xl bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 text-sm"
           >
-            🖨 Print
+            {printing ? 'Printing…' : '🖨 Print'}
           </button>
           <button
             onClick={onClose}

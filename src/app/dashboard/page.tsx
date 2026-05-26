@@ -54,7 +54,8 @@ function reprintSale(sale: Sale) {
   win.document.write(html);
   win.document.close();
   win.focus();
-  setTimeout(() => { win.print(); win.close(); }, 300);
+  win.onafterprint = () => win.close();
+  setTimeout(() => win.print(), 400);
 }
 
 /* ── Stat card ───────────────────────────────────────── */
@@ -291,24 +292,27 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStats = useCallback(async () => {
+  const loadStats = useCallback(async (signal?: AbortSignal) => {
     try {
       setError(null);
-      const res = await fetch('/api/stats');
+      const res = await fetch('/api/stats', { signal });
       if (!res.ok) throw new Error('Failed to load stats');
       setStats(await res.json());
     } catch (e) {
-      setError((e as Error).message);
+      if ((e as Error).name !== 'AbortError') setError((e as Error).message);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadStats();
-    // Auto-refresh every 30 s
-    const id = setInterval(loadStats, 30_000);
-    return () => clearInterval(id);
+    const controller = new AbortController();
+    loadStats(controller.signal);
+    const id = setInterval(() => loadStats(controller.signal), 30_000);
+    return () => {
+      controller.abort();
+      clearInterval(id);
+    };
   }, [loadStats]);
 
   return (
@@ -331,7 +335,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={loadStats}
+            onClick={() => loadStats()}
             title="Refresh"
             className="bg-white/20 hover:bg-white/30 p-1.5 rounded-lg transition"
           >
@@ -364,7 +368,7 @@ export default function DashboardPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 text-sm flex items-center gap-2">
             ⚠️ {error} —{' '}
-            <button onClick={loadStats} className="underline font-medium">
+            <button onClick={() => loadStats()} className="underline font-medium">
               retry
             </button>
           </div>

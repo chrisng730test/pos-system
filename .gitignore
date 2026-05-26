@@ -38,6 +38,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# database (SQLite files change constantly — exclude from git and Tailwind CSS scanning)
+/data/
 next-env.d.ts
 
 data/

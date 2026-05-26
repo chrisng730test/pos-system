@@ -5,10 +5,12 @@ import fs from 'fs';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'pos.db');
 
-let _db: Database.Database | null = null;
+// Persist the connection on globalThis so Next.js HMR module re-evaluations
+// (Turbopack) don't open a new connection without closing the old one.
+const g = globalThis as typeof globalThis & { __posDb?: Database.Database };
 
 export function getDb(): Database.Database {
-  if (_db) return _db;
+  if (g.__posDb) return g.__posDb;
 
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -49,5 +51,6 @@ export function getDb(): Database.Database {
     _db.prepare('ALTER TABLE sales ADD COLUMN payment_method TEXT').run();
   }
 
+  g.__posDb = _db;
   return _db;
 }
