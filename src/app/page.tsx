@@ -416,22 +416,37 @@ export default function POSPage() {
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       {/* Header */}
-      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-4 flex items-center justify-between shadow-lg flex-shrink-0">
+      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-3 flex items-center justify-between shadow-lg flex-shrink-0">
         <h1 className="text-xl font-bold tracking-wide flex items-center gap-2"><span className="text-2xl leading-none">🌿</span> ZYN POS</h1>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-1">
           <Link
             href="/dashboard"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium backdrop-blur-sm"
+            className="flex flex-col items-center gap-0.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium"
           >
-            📊 Dashboard
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path d="M12 9a1 1 0 0 1-1-1V3c0-.552.45-1.007.997-.93a7.004 7.004 0 0 1 5.933 5.933c.077.547-.378.997-.93.997h-5ZM8.5 4.034C8.5 3.482 8.053 3.031 7.504 3.1a7.001 7.001 0 0 0-5.404 9.252c.178.458.66.648 1.103.498l4.803-1.616a1 1 0 0 0 .644-.943V4.034ZM6.988 12.986A1 1 0 0 0 6 14c0 .552.449 1.008.997.934a7.009 7.009 0 0 0 4.52-2.783.951.951 0 0 0-.172-1.29l-3.695-3.076-.662 5.2Z" />
+            </svg>
+            <span className="text-xs leading-none">Dashboard</span>
+          </Link>
+          <Link
+            href="/transactions"
+            className="flex flex-col items-center gap-0.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M4 3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4Zm0 6a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H4Zm-1 7a1 1 0 0 1 1-1h12a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs leading-none">Transactions</span>
           </Link>
           <Link
             href="/admin"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium backdrop-blur-sm"
+            className="flex flex-col items-center gap-0.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium"
           >
-            ⚙ Items
+            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+              <path fillRule="evenodd" d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.422.587l1.25-.834a1 1 0 0 1 1.262.125l.962.962a1 1 0 0 1 .125 1.262l-.834 1.25c.245.45.443.925.587 1.422l1.473.294a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.422l.834 1.25a1 1 0 0 1-.125 1.262l-.962.962a1 1 0 0 1-1.262.125l-1.25-.834a6.953 6.953 0 0 1-1.422.587l-.294 1.473a1 1 0 0 1-.98.804H9.32a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.422-.587l-1.25.834a1 1 0 0 1-1.262-.125l-.962-.962a1 1 0 0 1-.125-1.262l.834-1.25a6.957 6.957 0 0 1-.587-1.422L1.804 11.32A1 1 0 0 1 1 10.34V8.98a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.422l-.834-1.25a1 1 0 0 1 .125-1.262l.962-.962A1 1 0 0 1 5.38 2.684l1.25.834a6.957 6.957 0 0 1 1.422-.587l.289-1.127ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
+            </svg>
+            <span className="text-xs leading-none">Items</span>
           </Link>
-        </div>
+        </nav>
       </header>
 
       {/* Body */}
