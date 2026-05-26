@@ -380,7 +380,7 @@ export default function POSPage() {
     fetch('/api/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: crypto.randomUUID(), total, items: saleItems }),
+      body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, total, items: saleItems }),
     }).catch(console.error);
 
     setReceiptData({ receiptNo, createdAt: now.toISOString(), items: [...cart], total, paid, change: paid - total });

@@ -73,7 +73,7 @@ export async function GET() {
     /* ── Recent sales (last 10) ──────────────── */
     const recentSales = db
       .prepare(
-        `SELECT s.id, s.total, s.item_count, s.created_at,
+        `SELECT s.id, s.receipt_no, s.total, s.item_count, s.created_at,
                 json_group_array(json_object(
                   'item_name',  si.item_name,
                   'item_price', si.item_price,
