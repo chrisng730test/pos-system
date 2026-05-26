@@ -20,6 +20,9 @@ export interface SaleItem {
 export interface Sale {
   id: string;
   receipt_no?: string;
+  payment_method?: string;
+  amount_paid?: number;
+  change_amount?: number;
   total: number;
   item_count: number;
   created_at: string;

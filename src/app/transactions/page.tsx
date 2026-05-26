@@ -3,6 +3,26 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { Sale, SaleItem } from '@/types';
+import * as XLSX from 'xlsx';
+
+function exportTransactionsXLSX(sales: Sale[]) {
+  const rows = [
+    ['Receipt No', 'Date', 'Time', 'Payment', 'Items', 'Total (RM)'],
+    ...sales.map(s => [
+      s.receipt_no ?? '',
+      new Date(s.created_at).toLocaleDateString('en-MY'),
+      new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+      s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash',
+      s.items?.map(i => `${i.item_name} x${i.quantity}`).join(', ') ?? '',
+      s.total,
+    ]),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+  const date = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `transactions-${date}.xlsx`);
+}
 
 const fmt = (n: number) => n.toFixed(2);
 const fmtDate = (iso: string) =>
@@ -44,7 +64,8 @@ function reprintSale(sale: Sale) {
   <div class="row big"><span>TOTAL</span><span>RM${fmt(sale.total)}</span></div>
   ${isEwallet
     ? `<div class="row" style="color:#2563eb"><span>e-Wallet</span><span>RM${fmt(sale.total)}</span></div>`
-    : `<div class="row muted"><span>Payment</span><span>Cash</span></div>`
+    : `<div class="row muted"><span>Cash Paid</span><span>RM${sale.amount_paid != null ? fmt(sale.amount_paid) : '—'}</span></div>
+       <div class="row green"><span>Change</span><span>RM${sale.change_amount != null ? fmt(sale.change_amount) : '—'}</span></div>`
   }
   <hr class="divider">
   <div class="center muted" style="font-size:12px">Thank you! Please come again.</div>
@@ -271,6 +292,16 @@ export default function TransactionsPage() {
               />
             </svg>
           </button>
+          {!loading && filtered.length > 0 && (
+            <button
+              onClick={() => exportTransactionsXLSX(filtered)}
+              title="Export Excel"
+              className="text-sm bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
+              XLSX
+            </button>
+          )}
           <Link
             href="/"
             className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"

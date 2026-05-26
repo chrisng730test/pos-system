@@ -6,7 +6,7 @@ import { SaleItem } from '@/types';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, total, items, receipt_no, payment_method }: { id: string; total: number; items: SaleItem[]; receipt_no?: string; payment_method?: string } = body;
+    const { id, total, items, receipt_no, payment_method, amount_paid, change_amount }: { id: string; total: number; items: SaleItem[]; receipt_no?: string; payment_method?: string; amount_paid?: number; change_amount?: number } = body;
 
     if (!id || typeof total !== 'number' || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
@@ -17,14 +17,14 @@ export async function POST(req: NextRequest) {
     const created_at = new Date().toISOString();
 
     const insertSale = db.prepare(
-      'INSERT INTO sales (id, total, item_count, created_at, receipt_no, payment_method) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO sales (id, total, item_count, created_at, receipt_no, payment_method, amount_paid, change_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     );
     const insertItem = db.prepare(
       'INSERT INTO sale_items (sale_id, item_id, item_name, item_price, quantity) VALUES (?, ?, ?, ?, ?)',
     );
 
     db.transaction(() => {
-      insertSale.run(id, total, item_count, created_at, receipt_no ?? null, payment_method ?? null);
+      insertSale.run(id, total, item_count, created_at, receipt_no ?? null, payment_method ?? null, amount_paid ?? null, change_amount ?? null);
       for (const item of items) {
         insertItem.run(id, item.item_id, item.item_name, item.item_price, item.quantity);
       }
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     // Full list — join items and include all columns
     const sales = db
       .prepare(
-        `SELECT s.id, s.receipt_no, s.payment_method, s.total, s.item_count, s.created_at,
+        `SELECT s.id, s.receipt_no, s.payment_method, s.amount_paid, s.change_amount, s.total, s.item_count, s.created_at,
                 json_group_array(json_object(
                   'item_id',    si.item_id,
                   'item_name',  si.item_name,

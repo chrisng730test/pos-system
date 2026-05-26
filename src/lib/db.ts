@@ -40,10 +40,19 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_sale_items_name ON sale_items(item_name);
   `);
 
-  // Migration: add receipt_no if it doesn't exist yet
+  // Migrations
   const cols = _db.prepare('PRAGMA table_info(sales)').all() as { name: string }[];
   if (!cols.some(c => c.name === 'receipt_no')) {
     _db.prepare('ALTER TABLE sales ADD COLUMN receipt_no TEXT').run();
+  }
+  if (!cols.some(c => c.name === 'payment_method')) {
+    _db.prepare('ALTER TABLE sales ADD COLUMN payment_method TEXT').run();
+  }
+  if (!cols.some(c => c.name === 'amount_paid')) {
+    _db.prepare('ALTER TABLE sales ADD COLUMN amount_paid REAL').run();
+  }
+  if (!cols.some(c => c.name === 'change_amount')) {
+    _db.prepare('ALTER TABLE sales ADD COLUMN change_amount REAL').run();
   }
 
   return _db;
