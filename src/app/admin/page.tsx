@@ -438,25 +438,55 @@ const handleDelete = (id: string) => {
 
                   <div className="flex items-center gap-2">
 
+                    {/* Modern monochrome edit (pencil) icon */}
                     <button
-                      onClick={() => startEdit(item)}
-                      className="w-9 h-9 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 transition"
-                    >
-                      ✏️
-                    </button>
+  onClick={() => startEdit(item)}
+  className="w-9 h-9 rounded-xl hover:bg-slate-100 text-slate-500 transition flex items-center justify-center"
+  title="Edit"
+>
+  <svg
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.0"
+    className="w-5 h-5 relative top-[1.5px]"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M16.862 5.487a2.1 2.1 0 0 0-2.974-2.974l-7.1 7.1a2 2 0 0 0-.553.98l-.6 2.4a.5.5 0 0 0 .61.61l2.4-.6a2 2 0 0 0 .98-.553l7.1-7.1Z"
+    />
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M15.5 7.5l-3-3"
+    />
+  </svg>
+</button>
 
+                    {/* Modern monochrome box (restock) icon */}
                     <button
                       onClick={() => openRestock(item)}
-                      className="w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 transition"
+                      className="w-9 h-9 rounded-xl hover:bg-slate-100 text-slate-500 transition flex items-center justify-center"
+                      title="Restock"
                     >
-                      📦
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+                        <rect x="3.5" y="6.5" width="13" height="10" rx="2" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 6.5L10 2.5l7.5 4" />
+                      </svg>
                     </button>
 
+                    {/* Modern monochrome trash (delete) icon */}
                     <button
                       onClick={() => handleDelete(item.id)}
-                      className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition"
+                      className="w-9 h-9 rounded-xl hover:bg-slate-100 text-slate-500 transition flex items-center justify-center"
+                      title="Delete"
                     >
-                      🗑️
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 6.5v-1A1.5 1.5 0 0 1 9 4h2a1.5 1.5 0 0 1 1.5 1.5v1" />
+                        <rect x="4.5" y="6.5" width="11" height="9" rx="2" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 9.5v4m3-4v4" />
+                      </svg>
                     </button>
 
                   </div>
@@ -510,13 +540,18 @@ const handleDelete = (id: string) => {
                   {log.change}
                 </td>
                 <td className="px-5 py-4">
-                  <button
-                    onClick={() => deleteInventoryLog(log.id)}
-                    className="w-7 h-7 rounded bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"
-                    title="Delete log entry"
-                  >
-                    🗑️
-                  </button>
+                  {/* Modern monochrome trash (delete) icon */}
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="w-9 h-9 rounded-xl hover:bg-slate-100 text-slate-500 transition flex items-center justify-center"
+                      title="Delete"
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 6.5v-1A1.5 1.5 0 0 1 9 4h2a1.5 1.5 0 0 1 1.5 1.5v1" />
+                        <rect x="4.5" y="6.5" width="11" height="9" rx="2" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 9.5v4m3-4v4" />
+                      </svg>
+                    </button>
                 </td>
               </tr>
             ))}
@@ -620,7 +655,7 @@ const handleDelete = (id: string) => {
 
   <tr className="text-slate-500">
 
-    <th className="px-5 py-4 w-[55px] text-center">
+    <th className="px-5 py-4 w-[52px] text-center">
 
   <div className="flex justify-center">
 
@@ -724,14 +759,46 @@ const handleDelete = (id: string) => {
               {log.change}
             </td>
             <td className="px-5 py-4">
-              <button
-                onClick={() => deleteInventoryLog(log.id)}
-                className="w-7 h-7 rounded bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"
-                title="Delete log entry"
-              >
-                🗑️
-              </button>
-            </td>
+
+  <button
+    onClick={() => deleteInventoryLog(log.id)}
+    className="w-9 h-9 rounded-xl hover:bg-slate-100 text-slate-500 transition flex items-center justify-center"
+    title="Delete log entry"
+  >
+
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-5 h-5"
+    >
+
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 6.5v-1A1.5 1.5 0 0 1 9 4h2a1.5 1.5 0 0 1 1.5 1.5v1"
+      />
+
+      <rect
+        x="4.5"
+        y="6.5"
+        width="11"
+        height="9"
+        rx="2"
+      />
+
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.5 9.5v4m3-4v4"
+      />
+
+    </svg>
+
+  </button>
+
+</td>
           </tr>
         ))}
 
