@@ -328,7 +328,8 @@ const handleDelete = (id: string) => {
   </section>
 
   {/* Dashboard Grid */}
-  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+  {tab === 'items' && (
+<div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
     {/* Items Panel */}
     <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -501,7 +502,7 @@ const handleDelete = (id: string) => {
 
           <tbody>
 
-           {(history || []).map(log => (
+           {(history || []).slice(0, 6).map(log => (
               <tr
                 key={log.id}
                 className="border-t hover:bg-slate-50"
@@ -531,12 +532,101 @@ const handleDelete = (id: string) => {
 
           </tbody>
         </table>
+{history.length > 6 && (
+  <div className="flex justify-end p-4 border-t bg-slate-50">
 
+    <button
+      onClick={() => setTab('log')}
+      className="text-emerald-600 hover:text-emerald-700 text-sm font-semibold"
+    >
+      View All Logs →
+    </button>
+
+  </div>
+)}
       </div>
     </section>
 
     </div>
+)}
+{tab === 'log' && (
+<section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+
+  <div className="px-6 py-5 border-b bg-slate-50 flex items-center justify-between">
+
+    <h2 className="text-lg font-bold text-slate-800">
+      Full Inventory Log
+    </h2>
+
+    <button
+      onClick={() => setTab('items')}
+      className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold"
+    >
+      ← Back to Items
+    </button>
+
   </div>
+
+  <div className="overflow-auto max-h-[700px]">
+
+    <table className="w-full text-sm">
+
+      <thead className="bg-slate-50 sticky top-0">
+        <tr className="text-slate-500">
+
+          <th className="text-left px-5 py-4">
+            Date
+          </th>
+
+          <th className="text-left px-5 py-4">
+            Item
+          </th>
+
+          <th className="text-left px-5 py-4">
+            Change
+          </th>
+
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {(history || []).map(log => (
+          <tr
+            key={log.id}
+            className="border-t hover:bg-slate-50"
+          >
+
+            <td className="px-5 py-4 text-slate-500">
+              {new Date(log.created_at).toLocaleString()}
+            </td>
+
+            <td className="px-5 py-4">
+              {items.find(i => i.id === log.item_id)?.name || log.item_id}
+            </td>
+
+            <td
+              className={`px-5 py-4 font-bold ${
+                log.change > 0
+                  ? 'text-emerald-600'
+                  : 'text-red-500'
+              }`}
+            >
+              {log.change > 0 ? '+' : ''}
+              {log.change}
+            </td>
+
+          </tr>
+        ))}
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</section>
+)}
   {restock.open && restock.item && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
 
@@ -606,6 +696,7 @@ const handleDelete = (id: string) => {
 
   </div>
 )}
-</div>
+      </div>
+    </div>
   );
 }
