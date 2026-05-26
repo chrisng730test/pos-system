@@ -19,6 +19,14 @@ export function getDb(): Database.Database {
   _db.pragma('foreign_keys = ON');
 
   _db.exec(`
+    CREATE TABLE IF NOT EXISTS items (
+      id        TEXT    PRIMARY KEY,
+      name      TEXT    NOT NULL,
+      price     REAL    NOT NULL,
+      category  TEXT    NOT NULL,
+      inventory INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE TABLE IF NOT EXISTS sales (
       id          TEXT    PRIMARY KEY,
       total       REAL    NOT NULL,

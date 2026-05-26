@@ -541,7 +541,7 @@ export default function POSPage() {
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
               <path fillRule="evenodd" d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.422.587l1.25-.834a1 1 0 0 1 1.262.125l.962.962a1 1 0 0 1 .125 1.262l-.834 1.25c.245.45.443.925.587 1.422l1.473.294a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.422l.834 1.25a1 1 0 0 1-.125 1.262l-.962.962a1 1 0 0 1-1.262.125l-1.25-.834a6.953 6.953 0 0 1-1.422.587l-.294 1.473a1 1 0 0 1-.98.804H9.32a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.422-.587l-1.25.834a1 1 0 0 1-1.262-.125l-.962-.962a1 1 0 0 1-.125-1.262l.834-1.25a6.957 6.957 0 0 1-.587-1.422L1.804 11.32A1 1 0 0 1 1 10.34V8.98a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.422l-.834-1.25a1 1 0 0 1 .125-1.262l.962-.962A1 1 0 0 1 5.38 2.684l1.25.834a6.957 6.957 0 0 1 1.422-.587l.289-1.127ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
             </svg>
-            <span className="text-xs leading-none">Items</span>
+            <span className="text-xs leading-none">Settings</span>
           </Link>
         </nav>
       </header>
@@ -580,12 +580,18 @@ export default function POSPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {filteredItems.map(item => {
                   const cartItem = cart.find(c => c.item.id === item.id);
+                  const outOfStock = item.inventory <= 0;
                   return (
                     <button
                       key={item.id}
-                      onClick={() => addToCart(item)}
-                      className={`relative bg-white rounded-2xl p-4 text-left hover:shadow-xl hover:-translate-y-1 transition-all duration-150 active:scale-95 ${
-                        cartItem ? 'ring-2 ring-emerald-400 shadow-lg shadow-emerald-100' : 'shadow-sm border border-slate-100'
+                      onClick={() => !outOfStock && addToCart(item)}
+                      disabled={outOfStock}
+                      className={`relative bg-white rounded-2xl p-4 text-left transition-all duration-150 active:scale-95 ${
+                        outOfStock
+                          ? 'opacity-50 cursor-not-allowed border border-slate-200'
+                          : cartItem
+                          ? 'ring-2 ring-emerald-400 shadow-lg shadow-emerald-100 hover:shadow-xl hover:-translate-y-1'
+                          : 'shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1'
                       }`}
                     >
                       {cartItem && (
@@ -596,11 +602,17 @@ export default function POSPage() {
                       <div className="text-sm text-emerald-600 font-bold mb-1 uppercase tracking-wide">
                         {item.category}
                       </div>
-                      <div className="font-bold text-gray-700 text-xl leading-tight">
+                      <div className="font-bold text-gray-700 text-xl leading-tight flex items-center gap-2">
                         {item.name}
+                        {outOfStock && (
+                          <span className="ml-1 px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-xs font-bold">Out of stock</span>
+                        )}
                       </div>
-                      <div className="mt-2 text-emerald-700 font-bold text-2xl">
-                        RM{item.price.toFixed(2)}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-emerald-700 font-bold text-2xl">RM{item.price.toFixed(2)}</span>
+                        <span className="ml-auto text-xs text-slate-500 font-mono bg-slate-100 rounded px-2 py-0.5">
+                          {item.inventory} in stock
+                        </span>
                       </div>
                     </button>
                   );

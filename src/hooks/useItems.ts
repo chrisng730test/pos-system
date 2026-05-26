@@ -20,8 +20,9 @@ export function useItems() {
     // eslint-disable-next-line
   }, []);
 
+
   const addItem = async (item: Omit<MenuItem, 'id'>) => {
-    const newItem = { ...item, id: crypto.randomUUID() };
+    const newItem = { ...item, inventory: item.inventory ?? 0 };
     await fetch('/api/items', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,7 +35,7 @@ export function useItems() {
     const item = items.find(i => i.id === id);
     if (!item) return;
     await fetch('/api/items', {
-      method: 'POST',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...item, ...updates }),
     });
