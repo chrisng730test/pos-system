@@ -49,6 +49,7 @@ export default function AdminPage() {
   } = useInventoryHistory();
   const [restock, setRestock] = useState<RestockState>({ open: false, item: null, qty: '', reason: '', loading: false });
   const [tab, setTab] = useState<'items' | 'log'>('items');
+  const [selectedLogs, setSelectedLogs] = useState<number[]>([]);
 
   // Restock modal logic
   const openRestock = (item: MenuItem) => setRestock({ open: true, item, qty: '', reason: '', loading: false });
@@ -483,23 +484,7 @@ const handleDelete = (id: string) => {
       <div className="overflow-auto max-h-[700px]">
 
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 sticky top-0">
-            <tr className="text-slate-500">
-
-              <th className="text-left px-5 py-4">
-                Date
-              </th>
-
-              <th className="text-left px-5 py-4">
-                Item
-              </th>
-
-              <th className="text-left px-5 py-4">
-                Change
-              </th>
-
-            </tr>
-          </thead>
+          
 
           <tbody>
 
@@ -560,9 +545,61 @@ const handleDelete = (id: string) => {
 
   <div className="px-6 py-5 border-b bg-slate-50 flex items-center justify-between">
 
+  <div>
     <h2 className="text-lg font-bold text-slate-800">
       Full Inventory Log
     </h2>
+
+    <p className="text-xs text-slate-400 mt-1">
+      {selectedLogs.length} selected
+    </p>
+  </div>
+
+  <div className="flex items-center gap-3">
+
+    <button
+      onClick={() => {
+
+        if (selectedLogs.length === history.length) {
+          setSelectedLogs([]);
+        } else {
+          setSelectedLogs(
+            history.map(log => log.id)
+          );
+        }
+
+      }}
+      className="text-sm bg-slate-200 hover:bg-slate-300 px-3 py-2 rounded-xl font-medium"
+    >
+      {selectedLogs.length === history.length
+        ? 'Unselect All'
+        : 'Select All'}
+    </button>
+
+    {selectedLogs.length > 0 && (
+      <button
+        onClick={async () => {
+
+          const confirmed = confirm(
+            `Delete ${selectedLogs.length} inventory logs?`
+          );
+
+          if (!confirmed) return;
+
+          for (const id of selectedLogs) {
+            await deleteInventoryLog(id);
+          }
+
+          setSelectedLogs([]);
+
+          refreshHistory();
+
+        }}
+        className="text-sm bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-semibold"
+      >
+        Delete Selected
+      </button>
+    )}
 
     <button
       onClick={() => setTab('items')}
@@ -573,44 +610,109 @@ const handleDelete = (id: string) => {
 
   </div>
 
+</div>
+
   <div className="overflow-auto max-h-[700px]">
 
     <table className="w-full text-sm">
 
       <thead className="bg-slate-50 sticky top-0">
-        <tr className="text-slate-500">
 
-          <th className="text-left px-5 py-4">
-            Date
-          </th>
+  <tr className="text-slate-500">
 
-          <th className="text-left px-5 py-4">
-            Item
-          </th>
+    <th className="px-5 py-4 w-[55px] text-center">
 
-          <th className="text-left px-5 py-4">
-            Change
-          </th>
+  <div className="flex justify-center">
 
-        </tr>
-      </thead>
+    <input
+      type="checkbox"
+      checked={
+        history.length > 0 &&
+        selectedLogs.length === history.length
+      }
+      onChange={e => {
+
+        if (e.target.checked) {
+
+          setSelectedLogs(
+            history.map((log: any) => log.id)
+          );
+
+        } else {
+
+          setSelectedLogs([]);
+
+        }
+
+      }}
+    />
+
+  </div>
+
+</th>
+
+    <th className="text-left px-5 py-4">
+      Date
+    </th>
+
+    <th className="text-left px-5 py-4">
+      Item
+    </th>
+
+    <th className="text-left px-5 py-4">
+      Change
+    </th>
+
+    <th className="text-left px-5 py-4">
+      Action
+    </th>
+
+  </tr>
+
+</thead>
 
       <tbody>
 
         {(history || []).map(log => (
           <tr
             key={log.id}
+            
             className="border-t hover:bg-slate-50"
           >
+            <td className="px-5 py-4">
 
+  <input
+    type="checkbox"
+    checked={selectedLogs.includes((log as any).id)}
+    onChange={e => {
+
+      if (e.target.checked) {
+
+        setSelectedLogs([
+          ...selectedLogs,
+          (log as any).id,
+        ]);
+
+      } else {
+
+        setSelectedLogs(
+          selectedLogs.filter(
+            id => id !== (log as any).id
+          )
+        );
+
+      }
+
+    }}
+  />
+
+</td>
             <td className="px-5 py-4 text-slate-500">
               {new Date(log.created_at).toLocaleString()}
             </td>
-
             <td className="px-5 py-4">
               {items.find(i => i.id === log.item_id)?.name || log.item_id}
             </td>
-
             <td
               className={`px-5 py-4 font-bold ${
                 log.change > 0
@@ -621,7 +723,15 @@ const handleDelete = (id: string) => {
               {log.change > 0 ? '+' : ''}
               {log.change}
             </td>
-
+            <td className="px-5 py-4">
+              <button
+                onClick={() => deleteInventoryLog(log.id)}
+                className="w-7 h-7 rounded bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"
+                title="Delete log entry"
+              >
+                🗑️
+              </button>
+            </td>
           </tr>
         ))}
 
