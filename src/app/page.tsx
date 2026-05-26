@@ -13,6 +13,7 @@ interface ReceiptData {
   total: number;
   paid: number;
   change: number;
+  paymentMethod: string;
 }
 
 interface CartContentProps {
@@ -148,17 +149,16 @@ function CartContent({
 /* ── Payment Modal ──────────────────────────────────── */
 function PaymentModal({
   total,
-  tendered,
-  onTenderedChange,
   onConfirm,
   onCancel,
 }: {
   total: number;
-  tendered: string;
-  onTenderedChange: (v: string) => void;
-  onConfirm: (paid: number) => void;
+  onConfirm: (paid: number, paymentMethod: string) => void;
   onCancel: () => void;
 }) {
+  const [step, setStep] = useState<'method' | 'cash' | 'ewallet'>('method');
+  const [tendered, setTendered] = useState('');
+
   const paid = parseFloat(tendered) || 0;
   const change = paid - total;
   const valid = paid >= total;
@@ -175,71 +175,144 @@ function PaymentModal({
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm">
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 rounded-t-2xl">
           <h2 className="text-white text-xl font-bold">Payment</h2>
-          <p className="text-emerald-100 text-sm mt-0.5">Enter amount received from customer</p>
+          <p className="text-emerald-100 text-sm mt-0.5">
+            {step === 'method' && 'Select payment method'}
+            {step === 'cash' && 'Enter cash received'}
+            {step === 'ewallet' && 'Confirm e-Wallet payment'}
+          </p>
         </div>
-        <div className="p-6 space-y-5">
-          <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-            <span className="text-slate-500 font-medium">Amount Due</span>
-            <span className="text-2xl font-bold text-slate-900">RM{total.toFixed(2)}</span>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              Cash Received (RM)
-            </label>
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={tendered}
-              onChange={e => onTenderedChange(e.target.value)}
-              placeholder={total.toFixed(2)}
-              autoFocus
-              className="w-full border-2 border-slate-200 focus:border-emerald-400 rounded-xl px-4 py-3 text-2xl font-bold text-right text-slate-900 focus:outline-none transition"
-            />
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {suggestions.map(amt => (
+
+        {/* Step: method selection */}
+        {step === 'method' && (
+          <div className="p-6 space-y-4">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Amount Due</span>
+              <span className="text-2xl font-bold text-slate-900">RM{total.toFixed(2)}</span>
+            </div>
+            <p className="text-sm text-slate-500 font-medium">Choose payment method:</p>
+            <div className="grid grid-cols-2 gap-3">
               <button
-                key={amt}
-                onClick={() => onTenderedChange(amt.toFixed(2))}
-                className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${
-                  parseFloat(tendered) === amt
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-700'
-                }`}
+                onClick={() => setStep('cash')}
+                className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition"
               >
-                {Number.isInteger(amt) ? amt : amt.toFixed(2)}
+                <span className="text-3xl">💵</span>
+                <span className="font-bold text-slate-700">Cash</span>
               </button>
-            ))}
+              <button
+                onClick={() => setStep('ewallet')}
+                className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition"
+              >
+                <span className="text-3xl">📱</span>
+                <span className="font-bold text-slate-700">e-Wallet</span>
+              </button>
+            </div>
+            <button
+              onClick={onCancel}
+              className="w-full py-3 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition"
+            >
+              Cancel
+            </button>
           </div>
-          <div
-            className={`flex justify-between items-center px-4 py-3.5 rounded-xl border-2 transition ${
-              valid ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'
-            }`}
-          >
-            <span className={`font-bold text-base ${valid ? 'text-emerald-700' : 'text-slate-400'}`}>
-              Change
-            </span>
-            <span className={`text-2xl font-bold ${valid ? 'text-emerald-700' : 'text-slate-300'}`}>
-              {valid ? `RM${change.toFixed(2)}` : '—'}
-            </span>
+        )}
+
+        {/* Step: cash */}
+        {step === 'cash' && (
+          <div className="p-6 space-y-5">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Amount Due</span>
+              <span className="text-2xl font-bold text-slate-900">RM{total.toFixed(2)}</span>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                Cash Received (RM)
+              </label>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={tendered}
+                onChange={e => setTendered(e.target.value)}
+                placeholder={total.toFixed(2)}
+                autoFocus
+                className="w-full border-2 border-slate-200 focus:border-emerald-400 rounded-xl px-4 py-3 text-2xl font-bold text-right text-slate-900 focus:outline-none transition"
+              />
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {suggestions.map(amt => (
+                <button
+                  key={amt}
+                  onClick={() => setTendered(amt.toFixed(2))}
+                  className={`py-2.5 rounded-xl text-sm font-bold border-2 transition ${
+                    parseFloat(tendered) === amt
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-slate-700'
+                  }`}
+                >
+                  {Number.isInteger(amt) ? amt : amt.toFixed(2)}
+                </button>
+              ))}
+            </div>
+            <div
+              className={`flex justify-between items-center px-4 py-3.5 rounded-xl border-2 transition ${
+                valid ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <span className={`font-bold text-base ${valid ? 'text-emerald-700' : 'text-slate-400'}`}>
+                Change
+              </span>
+              <span className={`text-2xl font-bold ${valid ? 'text-emerald-700' : 'text-slate-300'}`}>
+                {valid ? `RM${change.toFixed(2)}` : '—'}
+              </span>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep('method')}
+                className="flex-1 py-3.5 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => valid && onConfirm(paid, 'cash')}
+                disabled={!valid}
+                className="flex-[2] py-3.5 rounded-xl bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-base hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 disabled:shadow-none"
+              >
+                Confirm Payment
+              </button>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-3 px-6 pb-6">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-3.5 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => valid && onConfirm(paid)}
-            disabled={!valid}
-            className="flex-[2] py-3.5 rounded-xl bg-emerald-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-base hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 disabled:shadow-none"
-          >
-            Confirm Payment
-          </button>
-        </div>
+        )}
+
+        {/* Step: ewallet */}
+        {step === 'ewallet' && (
+          <div className="p-6 space-y-5">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <span className="text-slate-500 font-medium">Amount Due</span>
+              <span className="text-2xl font-bold text-slate-900">RM{total.toFixed(2)}</span>
+            </div>
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl px-5 py-4 text-center space-y-2">
+              <p className="text-blue-800 font-bold text-base">⚠️ Staff Check Required</p>
+              <p className="text-blue-700 text-sm">
+                Please ensure{' '}
+                <span className="font-bold">RM{total.toFixed(2)}</span>{' '}
+                has been received in the e-Wallet app before confirming.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setStep('method')}
+                className="flex-1 py-3.5 rounded-xl border-2 border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => onConfirm(total, 'ewallet')}
+                className="flex-[2] py-3.5 rounded-xl bg-blue-600 text-white font-bold text-base hover:bg-blue-700 transition shadow-lg shadow-blue-200"
+              >
+                Payment Received ✓
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -258,6 +331,11 @@ function printReceipt(data: ReceiptData) {
     )
     .join('');
 
+  const paymentRows = data.paymentMethod === 'ewallet'
+    ? `<div class="row blue"><span>📱 e-Wallet</span><span>RM${data.total.toFixed(2)}</span></div>`
+    : `<div class="row muted"><span>Cash</span><span>RM${data.paid.toFixed(2)}</span></div>
+  <div class="row green"><span>Change</span><span>RM${data.change.toFixed(2)}</span></div>`;
+
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Receipt ${data.receiptNo}</title>
 <style>
@@ -267,6 +345,7 @@ function printReceipt(data: ReceiptData) {
   .divider{border:none;border-top:2px dashed #aaa;margin:10px 0}
   .big{font-size:16px;font-weight:bold}
   .muted{color:#666} .green{color:#059669;font-weight:bold}
+  .blue{color:#2563eb;font-weight:bold}
   .tag{display:inline-block;background:#f1f5f9;padding:2px 10px;border-radius:999px;font-size:12px}
 </style></head>
 <body>
@@ -279,8 +358,7 @@ function printReceipt(data: ReceiptData) {
   ${itemRows}
   <hr class="divider">
   <div class="row big"><span>TOTAL</span><span>RM${data.total.toFixed(2)}</span></div>
-  <div class="row muted"><span>Cash</span><span>RM${data.paid.toFixed(2)}</span></div>
-  <div class="row green"><span>Change</span><span>RM${data.change.toFixed(2)}</span></div>
+  ${paymentRows}
   <hr class="divider">
   <div class="center muted" style="font-size:12px">Thank you! Please come again.</div>
 </body></html>`;
@@ -326,14 +404,23 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
               <span>TOTAL</span>
               <span>RM{data.total.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Cash</span>
-              <span>RM{data.paid.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-emerald-700 font-bold">
-              <span>Change</span>
-              <span>RM{data.change.toFixed(2)}</span>
-            </div>
+            {data.paymentMethod === 'ewallet' ? (
+              <div className="flex justify-between text-blue-600 font-bold">
+                <span>📱 e-Wallet</span>
+                <span>RM{data.total.toFixed(2)}</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between text-slate-600">
+                  <span>Cash</span>
+                  <span>RM{data.paid.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-700 font-bold">
+                  <span>Change</span>
+                  <span>RM{data.change.toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </div>
           <div className="border-t-2 border-dashed border-slate-200 my-3" />
           <p className="text-center text-xs text-slate-400">Thank you! Please come again.</p>
@@ -364,18 +451,16 @@ export default function POSPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [cartOpen, setCartOpen] = useState(false);
   const [payStep, setPayStep] = useState<'idle' | 'payment' | 'receipt'>('idle');
-  const [tendered, setTendered] = useState('');
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
 
   const filteredItems =
     selectedCategory === 'All' ? items : items.filter(i => i.category === selectedCategory);
 
   const handleCharge = () => {
-    setTendered('');
     setPayStep('payment');
   };
 
-  const handleConfirmPayment = (paid: number) => {
+  const handleConfirmPayment = (paid: number, paymentMethod: string) => {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
     const rand = Math.floor(Math.random() * 9000 + 1000);
@@ -391,10 +476,10 @@ export default function POSPage() {
     fetch('/api/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, total, items: saleItems }),
+      body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, total, items: saleItems, payment_method: paymentMethod }),
     }).catch(console.error);
 
-    setReceiptData({ receiptNo, createdAt: now.toISOString(), items: [...cart], total, paid, change: paid - total });
+    setReceiptData({ receiptNo, createdAt: now.toISOString(), items: [...cart], total, paid, change: paid - total, paymentMethod });
     setPayStep('receipt');
   };
 
@@ -565,8 +650,6 @@ export default function POSPage() {
       {payStep === 'payment' && (
         <PaymentModal
           total={total}
-          tendered={tendered}
-          onTenderedChange={setTendered}
           onConfirm={handleConfirmPayment}
           onCancel={() => setPayStep('idle')}
         />
