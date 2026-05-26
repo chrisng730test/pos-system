@@ -23,10 +23,28 @@ export async function POST(req: NextRequest) {
       'INSERT INTO sale_items (sale_id, item_id, item_name, item_price, quantity) VALUES (?, ?, ?, ?, ?)',
     );
 
+
+    // Check inventory for all items first
+    const checkInventory = db.prepare('SELECT inventory FROM items WHERE id = ?');
+    for (const item of items) {
+      const row = checkInventory.get(item.item_id);
+      if (!row || row.inventory < item.quantity) {
+        return NextResponse.json({ error: `Insufficient stock for item: ${item.item_name}` }, { status: 400 });
+      }
+    }
+
+    // Prepare update inventory statement
+    const updateInventory = db.prepare('UPDATE items SET inventory = inventory - ? WHERE id = ? AND inventory >= ?');
+
     db.transaction(() => {
       insertSale.run(id, total, item_count, created_at, receipt_no ?? null, payment_method ?? null, amount_paid ?? null, change_amount ?? null);
       for (const item of items) {
         insertItem.run(id, item.item_id, item.item_name, item.item_price, item.quantity);
+        // Reduce inventory, prevent negative
+        const result = updateInventory.run(item.quantity, item.item_id, item.quantity);
+        if (result.changes === 0) {
+          throw new Error(`Failed to update inventory for item: ${item.item_name}`);
+        }
       }
     })();
 
