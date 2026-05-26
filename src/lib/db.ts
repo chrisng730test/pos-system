@@ -5,12 +5,10 @@ import fs from 'fs';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'pos.db');
 
-// Persist the connection on globalThis so Next.js HMR module re-evaluations
-// (Turbopack) don't open a new connection without closing the old one.
-const g = globalThis as typeof globalThis & { __posDb?: Database.Database };
+let _db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
-  if (g.__posDb) return g.__posDb;
+  if (_db) return _db;
 
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -42,7 +40,7 @@ export function getDb(): Database.Database {
     CREATE INDEX IF NOT EXISTS idx_sale_items_name ON sale_items(item_name);
   `);
 
-  // Migration: add receipt_no if it doesn't exist yet
+  // Migrations
   const cols = _db.prepare('PRAGMA table_info(sales)').all() as { name: string }[];
   if (!cols.some(c => c.name === 'receipt_no')) {
     _db.prepare('ALTER TABLE sales ADD COLUMN receipt_no TEXT').run();
@@ -50,7 +48,12 @@ export function getDb(): Database.Database {
   if (!cols.some(c => c.name === 'payment_method')) {
     _db.prepare('ALTER TABLE sales ADD COLUMN payment_method TEXT').run();
   }
+  if (!cols.some(c => c.name === 'amount_paid')) {
+    _db.prepare('ALTER TABLE sales ADD COLUMN amount_paid REAL').run();
+  }
+  if (!cols.some(c => c.name === 'change_amount')) {
+    _db.prepare('ALTER TABLE sales ADD COLUMN change_amount REAL').run();
+  }
 
-  g.__posDb = _db;
   return _db;
 }

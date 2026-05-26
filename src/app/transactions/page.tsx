@@ -1,8 +1,103 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Sale, SaleItem } from '@/types';
+import * as XLSX from 'xlsx';
+
+function exportTransactionsXLSX(sales: Sale[]) {
+  const header = ['#', 'Receipt No', 'Date', 'Time', 'Payment', 'Item', 'Qty', 'Unit Price (RM)', 'Subtotal (RM)', 'Total (RM)'];
+  const rows: (string | number)[][] = [header];
+
+  for (const s of sales) {
+    const txnNo = sales.indexOf(s) + 1;
+    const items = s.items ?? [];
+    const date = new Date(s.created_at).toLocaleDateString('en-MY');
+    const time = new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+    const payment = s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash';
+
+    if (items.length === 0) {
+      rows.push([txnNo, s.receipt_no ?? '', date, time, payment, '', '', '', '', s.total]);
+    } else {
+      items.forEach((item, idx) => {
+        const subtotal = item.item_price * item.quantity;
+        rows.push([
+          idx === 0 ? txnNo : '',
+          idx === 0 ? (s.receipt_no ?? '') : '',
+          idx === 0 ? date : '',
+          idx === 0 ? time : '',
+          idx === 0 ? payment : '',
+          item.item_name,
+          item.quantity,
+          item.item_price,
+          subtotal,
+          idx === 0 ? s.total : '',
+        ]);
+      });
+    }
+    rows.push([]); // blank separator
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+  const date = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `transactions-${date}.xlsx`);
+}
+
+async function exportTransactionsPDF(sales: Sale[]) {
+  const jsPDF = (await import('jspdf')).default;
+  const { default: autoTable } = await import('jspdf-autotable');
+  const doc = new jsPDF();
+  const date = new Date().toISOString().slice(0, 10);
+  doc.setFontSize(16);
+  doc.text('Transactions', 14, 18);
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString('en-MY')}`, 14, 25);
+
+  type AutoTableCell = { content: string; colSpan?: number; styles?: Record<string, unknown> };
+  const body: (string | AutoTableCell)[][] = [];
+
+  for (const [txnIdx, s] of sales.entries()) {
+    const dtDate = new Date(s.created_at).toLocaleDateString('en-MY');
+    const dtTime = new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+    const payment = s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash';
+
+    // Transaction header row spanning all columns
+    body.push([{
+      content: `#${txnIdx + 1}   ${s.receipt_no ?? '—'}   ${dtDate} ${dtTime}   ${payment}   Total: RM${s.total.toFixed(2)}`,
+      colSpan: 5,
+      styles: { fillColor: [239, 246, 255], fontStyle: 'bold', textColor: [30, 64, 175], fontSize: 8.5 },
+    }]);
+
+    // Item rows
+    for (const item of s.items ?? []) {
+      body.push([
+        '',
+        item.item_name,
+        String(item.quantity),
+        item.item_price.toFixed(2),
+        (item.item_price * item.quantity).toFixed(2),
+      ]);
+    }
+  }
+
+  autoTable(doc, {
+    startY: 30,
+    head: [['', 'Item', 'Qty', 'Unit Price (RM)', 'Subtotal (RM)']],
+    body,
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [99, 102, 241] },
+    columnStyles: {
+      0: { cellWidth: 6 },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 18, halign: 'center' },
+      3: { cellWidth: 32, halign: 'right' },
+      4: { cellWidth: 32, halign: 'right' },
+    },
+  });
+  doc.save(`transactions-${date}.pdf`);
+}
 
 const fmt = (n: number) => n.toFixed(2);
 const fmtDate = (iso: string) =>
@@ -44,7 +139,8 @@ function reprintSale(sale: Sale) {
   <div class="row big"><span>TOTAL</span><span>RM${fmt(sale.total)}</span></div>
   ${isEwallet
     ? `<div class="row" style="color:#2563eb"><span>e-Wallet</span><span>RM${fmt(sale.total)}</span></div>`
-    : `<div class="row muted"><span>Payment</span><span>Cash</span></div>`
+    : `<div class="row muted"><span>Cash Paid</span><span>RM${sale.amount_paid != null ? fmt(sale.amount_paid) : '—'}</span></div>
+       <div class="row green"><span>Change</span><span>RM${sale.change_amount != null ? fmt(sale.change_amount) : '—'}</span></div>`
   }
   <hr class="divider">
   <div class="center muted" style="font-size:12px">Thank you! Please come again.</div>
@@ -206,6 +302,18 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const loadSales = useCallback(async () => {
     try {
@@ -271,6 +379,36 @@ export default function TransactionsPage() {
               />
             </svg>
           </button>
+          {!loading && filtered.length > 0 && (
+            <div ref={exportMenuRef} className="relative">
+              <button
+                onClick={() => setShowExportMenu(v => !v)}
+                className="text-sm bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
+                Export
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg>
+              </button>
+              {showExportMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 min-w-[140px]">
+                  <button
+                    onClick={() => { exportTransactionsPDF(filtered); setShowExportMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-red-500"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
+                    PDF
+                  </button>
+                  <button
+                    onClick={() => { exportTransactionsXLSX(filtered); setShowExportMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-emerald-600"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
+                    Excel (XLSX)
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <Link
             href="/"
             className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"

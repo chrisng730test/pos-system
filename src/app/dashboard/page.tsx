@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { StatsResponse, DayStats, TopItem, Sale, SaleItem } from '@/types';
+import * as XLSX from 'xlsx';
 
 /* ── Helpers ─────────────────────────────────────────── */
 function fmt(n: number) {
@@ -34,7 +35,7 @@ function reprintSale(sale: Sale) {
   .center{text-align:center} .bold{font-weight:bold}
   .row{display:flex;justify-content:space-between;margin:5px 0}
   .divider{border:none;border-top:2px dashed #aaa;margin:10px 0}
-  .big{font-size:16px;font-weight:bold} .muted{color:#666}
+  .big{font-size:16px;font-weight:bold} .muted{color:#666} .green{color:#059669;font-weight:bold}
   .tag{display:inline-block;background:#f1f5f9;padding:2px 10px;border-radius:999px;font-size:12px}
 </style></head><body>
   <div class="center">
@@ -46,6 +47,11 @@ function reprintSale(sale: Sale) {
   ${itemRows}
   <hr class="divider">
   <div class="row big"><span>TOTAL</span><span>RM${fmt(sale.total)}</span></div>
+  ${sale.payment_method === 'ewallet'
+    ? `<div class="row" style="color:#2563eb"><span>e-Wallet</span><span>RM${fmt(sale.total)}</span></div>`
+    : `<div class="row muted"><span>Cash Paid</span><span>RM${sale.amount_paid != null ? fmt(sale.amount_paid) : '—'}</span></div>
+       <div class="row green"><span>Change</span><span>RM${sale.change_amount != null ? fmt(sale.change_amount) : '—'}</span></div>`
+  }
   <hr class="divider">
   <div class="center muted" style="font-size:12px">Thank you! Please come again.</div>
 </body></html>`;
@@ -77,6 +83,148 @@ function StatCard({
       {sub && <p className="text-xs text-slate-400">{sub}</p>}
     </div>
   );
+}
+
+/* ── Export helpers ──────────────────────────────────── */
+function exportDashboardXLSX(stats: StatsResponse) {
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Summary
+  const summaryData = [
+    ['Metric', 'Value'],
+    ["Today's Revenue (RM)", stats.today.revenue],
+    ["Today's Transactions", stats.today.transactions],
+    ["Today's Items Sold", stats.today.items_sold],
+    ['Week Revenue (RM)', stats.week.reduce((s, d) => s + d.revenue, 0)],
+    ['Week Transactions', stats.week.reduce((s, d) => s + d.transactions, 0)],
+    ['Generated', new Date().toLocaleString('en-MY')],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Summary');
+
+  // Sheet 2: 7-Day Revenue
+  const weekData = [
+    ['Date', 'Revenue (RM)', 'Transactions', 'Items Sold'],
+    ...stats.week.map(d => [d.date, d.revenue, d.transactions, d.items_sold]),
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(weekData), '7-Day Revenue');
+
+  // Sheet 3: Top Items
+  const topData = [
+    ['Rank', 'Item Name', 'Qty Sold', 'Revenue (RM)'],
+    ...stats.topItems.map((item, i) => [i + 1, item.item_name, item.quantity, item.revenue]),
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(topData), 'Top Items');
+
+  // Sheet 4: Recent Transactions
+  const txData = [
+    ['Receipt No', 'Date', 'Time', 'Payment', 'Items', 'Total (RM)'],
+    ...stats.recentSales.map(s => [
+      s.receipt_no ?? '',
+      new Date(s.created_at).toLocaleDateString('en-MY'),
+      new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+      s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash',
+      s.items?.map(i => `${i.item_name} x${i.quantity}`).join(', ') ?? '',
+      s.total,
+    ]),
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(txData), 'Recent Transactions');
+
+  const date = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `dashboard-${date}.xlsx`);
+}
+
+async function exportDashboardPDF(stats: StatsResponse) {
+  const jsPDF = (await import('jspdf')).default;
+  const { default: autoTable } = await import('jspdf-autotable');
+  const doc = new jsPDF();
+  const date = new Date().toLocaleDateString('en-MY', { year: 'numeric', month: 'long', day: 'numeric' });
+  let y = 15;
+
+  doc.setFontSize(18);
+  doc.setTextColor(5, 150, 105); // emerald
+  doc.text('ZYN POS — Dashboard Report', 14, y);
+  y += 7;
+  doc.setFontSize(9);
+  doc.setTextColor(100);
+  doc.text(`Generated: ${date}`, 14, y);
+  y += 8;
+
+  // Summary
+  doc.setFontSize(12);
+  doc.setTextColor(30);
+  doc.text('Summary', 14, y);
+  y += 3;
+  autoTable(doc, {
+    startY: y,
+    head: [['Metric', 'Value']],
+    body: [
+      ["Today's Revenue", `RM ${stats.today.revenue.toFixed(2)}`],
+      ["Today's Transactions", String(stats.today.transactions)],
+      ["Today's Items Sold", String(stats.today.items_sold)],
+      ['Week Revenue', `RM ${stats.week.reduce((s, d) => s + d.revenue, 0).toFixed(2)}`],
+      ['Week Transactions', String(stats.week.reduce((s, d) => s + d.transactions, 0))],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: [5, 150, 105] },
+    margin: { left: 14, right: 14 },
+  });
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+
+  // 7-Day Revenue
+  doc.setFontSize(12);
+  doc.text('7-Day Revenue', 14, y);
+  y += 3;
+  autoTable(doc, {
+    startY: y,
+    head: [['Date', 'Revenue (RM)', 'Transactions', 'Items Sold']],
+    body: stats.week.map(d => [d.date, d.revenue.toFixed(2), d.transactions, d.items_sold]),
+    theme: 'striped',
+    headStyles: { fillColor: [5, 150, 105] },
+    margin: { left: 14, right: 14 },
+  });
+  y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+
+  // Top Items
+  if (stats.topItems.length > 0) {
+    if (y > 220) { doc.addPage(); y = 15; }
+    doc.setFontSize(12);
+    doc.text('Top Items (last 30 days)', 14, y);
+    y += 3;
+    autoTable(doc, {
+      startY: y,
+      head: [['#', 'Item Name', 'Qty Sold', 'Revenue (RM)']],
+      body: stats.topItems.map((item, i) => [i + 1, item.item_name, item.quantity, item.revenue.toFixed(2)]),
+      theme: 'striped',
+      headStyles: { fillColor: [5, 150, 105] },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  }
+
+  // Recent Transactions
+  if (stats.recentSales.length > 0) {
+    if (y > 220) { doc.addPage(); y = 15; }
+    doc.setFontSize(12);
+    doc.text('Recent Transactions', 14, y);
+    y += 3;
+    autoTable(doc, {
+      startY: y,
+      head: [['Receipt No', 'Date', 'Time', 'Payment', 'Total (RM)']],
+      body: stats.recentSales.map(s => [
+        s.receipt_no ?? '—',
+        new Date(s.created_at).toLocaleDateString('en-MY'),
+        new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
+        s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash',
+        s.total.toFixed(2),
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [5, 150, 105] },
+      margin: { left: 14, right: 14 },
+    });
+  }
+
+  const fileDate = new Date().toISOString().slice(0, 10);
+  doc.save(`dashboard-${fileDate}.pdf`);
 }
 
 /* ── Bar chart (pure CSS/SVG) ────────────────────────── */
@@ -199,9 +347,15 @@ function RecentSales({ sales, onDelete }: { sales: Sale[]; onDelete: (id: string
                   <span className="text-xs text-slate-400 tabular-nums">
                     {fmtTime(sale.created_at)}
                   </span>
-                  <span className="text-xs bg-slate-100 text-slate-600 rounded-full px-2 py-0.5 font-medium">
-                    {sale.item_count} item{sale.item_count !== 1 ? 's' : ''}
-                  </span>
+                  {sale.payment_method && (
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
+                      sale.payment_method === 'ewallet'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                      {sale.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash'}
+                    </span>
+                  )}
                   {sale.receipt_no && (
                     <span className="text-xs font-mono text-slate-400">{sale.receipt_no}</span>
                   )}
@@ -291,6 +445,18 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const loadStats = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -341,6 +507,36 @@ export default function DashboardPage() {
           >
             <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.389Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clipRule="evenodd" /></svg>
           </button>
+          {stats && (
+            <div ref={exportMenuRef} className="relative">
+              <button
+                onClick={() => setShowExportMenu(v => !v)}
+                className="text-sm bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
+                Export
+                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg>
+              </button>
+              {showExportMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 min-w-[140px]">
+                  <button
+                    onClick={() => { exportDashboardPDF(stats); setShowExportMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-red-500"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
+                    PDF
+                  </button>
+                  <button
+                    onClick={() => { exportDashboardXLSX(stats); setShowExportMenu(false); }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-emerald-600"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
+                    Excel (XLSX)
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <Link
             href="/"
             className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"

@@ -476,7 +476,7 @@ export default function POSPage() {
     fetch('/api/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, total, items: saleItems, payment_method: paymentMethod }),
+      body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, total, items: saleItems, payment_method: paymentMethod, amount_paid: paid, change_amount: paid - total }),
     }).catch(console.error);
 
     setReceiptData({ receiptNo, createdAt: now.toISOString(), items: [...cart], total, paid, change: paid - total, paymentMethod });
@@ -593,13 +593,13 @@ export default function POSPage() {
                           {cartItem.quantity}
                         </span>
                       )}
-                      <div className="text-xs text-emerald-600 font-semibold mb-1 uppercase tracking-wide">
+                      <div className="text-sm text-emerald-600 font-bold mb-1 uppercase tracking-wide">
                         {item.category}
                       </div>
-                      <div className="font-semibold text-gray-800 text-sm leading-tight">
+                      <div className="font-bold text-gray-700 text-xl leading-tight">
                         {item.name}
                       </div>
-                      <div className="mt-2 text-emerald-700 font-bold text-lg">
+                      <div className="mt-2 text-emerald-700 font-bold text-2xl">
                         RM{item.price.toFixed(2)}
                       </div>
                     </button>
