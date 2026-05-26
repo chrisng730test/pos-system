@@ -234,6 +234,54 @@ function PaymentModal({
   );
 }
 
+/* ── Receipt print helper ───────────────────────────── */
+function printReceipt(data: ReceiptData) {
+  const dt = new Date(data.createdAt);
+  const dateStr = dt.toLocaleDateString('en-MY', { year: 'numeric', month: 'short', day: 'numeric' });
+  const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+
+  const itemRows = data.items
+    .map(
+      ({ item, quantity }) =>
+        `<div class="row"><span>${item.name} x${quantity}</span><span>RM${(item.price * quantity).toFixed(2)}</span></div>`,
+    )
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Receipt ${data.receiptNo}</title>
+<style>
+  body{font-family:monospace;font-size:14px;padding:24px;max-width:320px;margin:0 auto}
+  .center{text-align:center} .bold{font-weight:bold}
+  .row{display:flex;justify-content:space-between;margin:5px 0}
+  .divider{border:none;border-top:2px dashed #aaa;margin:10px 0}
+  .big{font-size:16px;font-weight:bold}
+  .muted{color:#666} .green{color:#059669;font-weight:bold}
+  .tag{display:inline-block;background:#f1f5f9;padding:2px 10px;border-radius:999px;font-size:12px}
+</style></head>
+<body>
+  <div class="center">
+    <div class="bold" style="font-size:20px">ZYN POS</div>
+    <div class="muted" style="font-size:12px;margin-top:4px">${dateStr} &middot; ${timeStr}</div>
+    <div class="tag" style="margin-top:6px">${data.receiptNo}</div>
+  </div>
+  <hr class="divider">
+  ${itemRows}
+  <hr class="divider">
+  <div class="row big"><span>TOTAL</span><span>RM${data.total.toFixed(2)}</span></div>
+  <div class="row muted"><span>Cash</span><span>RM${data.paid.toFixed(2)}</span></div>
+  <div class="row green"><span>Change</span><span>RM${data.change.toFixed(2)}</span></div>
+  <hr class="divider">
+  <div class="center muted" style="font-size:12px">Thank you! Please come again.</div>
+</body></html>`;
+
+  const win = window.open('', '_blank', 'width=420,height=620');
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); win.close(); }, 300);
+}
+
 /* ── Receipt Modal ──────────────────────────────────── */
 function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => void }) {
   const dt = new Date(data.createdAt);
@@ -242,9 +290,9 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm print:hidden" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
-        <div id="receipt-printable" className="p-6">
+        <div className="p-6">
           <div className="text-center mb-4">
             <div className="text-xl font-bold">🌿 ZYN POS</div>
             <div className="text-xs text-slate-500 mt-1">{dateStr} · {timeStr}</div>
@@ -279,9 +327,9 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
           <div className="border-t-2 border-dashed border-slate-200 my-3" />
           <p className="text-center text-xs text-slate-400">Thank you! Please come again.</p>
         </div>
-        <div className="flex gap-3 px-5 pb-5 print:hidden">
+        <div className="flex gap-3 px-5 pb-5">
           <button
-            onClick={() => window.print()}
+            onClick={() => printReceipt(data)}
             className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 text-sm"
           >
             🖨 Print
