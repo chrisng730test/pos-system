@@ -45,6 +45,9 @@ export function getDb(): Database.Database {
   if (!cols.some(c => c.name === 'receipt_no')) {
     _db.prepare('ALTER TABLE sales ADD COLUMN receipt_no TEXT').run();
   }
+  if (!cols.some(c => c.name === 'payment_method')) {
+    _db.prepare('ALTER TABLE sales ADD COLUMN payment_method TEXT').run();
+  }
 
   return _db;
 }

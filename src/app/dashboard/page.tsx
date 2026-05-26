@@ -204,6 +204,15 @@ function RecentSales({ sales, onDelete }: { sales: Sale[]; onDelete: (id: string
                   {sale.receipt_no && (
                     <span className="text-xs font-mono text-slate-400">{sale.receipt_no}</span>
                   )}
+                  {sale.payment_method && (
+                    <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
+                      sale.payment_method === 'ewallet'
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {sale.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash'}
+                    </span>
+                  )}
                   <span className="text-xs text-slate-400">
                     {new Date(sale.created_at).toLocaleDateString('en-US', {
                       month: 'short',
