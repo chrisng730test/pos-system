@@ -42,10 +42,11 @@ const EMPTY_FORM: ItemFormState = { name: '', price: '', category: '', inventory
 export default function AdminPage() {
   const { items, addItem, updateItem, deleteItem, categories, loaded } = useItems();
   const {
-  history = [],
-  loading: loadingHistory,
-  refresh: refreshHistory,
-} = useInventoryHistory();
+    history = [],
+    loading: loadingHistory,
+    refresh: refreshHistory,
+    deleteInventoryLog,
+  } = useInventoryHistory();
   const [restock, setRestock] = useState<RestockState>({ open: false, item: null, qty: '', reason: '', loading: false });
   const [tab, setTab] = useState<'items' | 'log'>('items');
 
@@ -507,15 +508,12 @@ const handleDelete = (id: string) => {
                 key={log.id}
                 className="border-t hover:bg-slate-50"
               >
-
                 <td className="px-5 py-4 text-slate-500">
                   {new Date(log.created_at).toLocaleString()}
                 </td>
-
                 <td className="px-5 py-4">
                   {items.find(i => i.id === log.item_id)?.name || log.item_id}
                 </td>
-
                 <td
                   className={`px-5 py-4 font-bold ${
                     log.change > 0
@@ -526,7 +524,15 @@ const handleDelete = (id: string) => {
                   {log.change > 0 ? '+' : ''}
                   {log.change}
                 </td>
-
+                <td className="px-5 py-4">
+                  <button
+                    onClick={() => deleteInventoryLog(log.id)}
+                    className="w-7 h-7 rounded bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center"
+                    title="Delete log entry"
+                  >
+                    🗑️
+                  </button>
+                </td>
               </tr>
             ))}
 
