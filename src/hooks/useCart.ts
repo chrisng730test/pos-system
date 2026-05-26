@@ -3,12 +3,19 @@
 import { useState } from 'react';
 import { MenuItem, CartItem } from '@/types';
 
+
 export function useCart() {
   const [cart, setCart] = useState<CartItem[]>([]);
 
+  // Prevent adding more than in stock
   const addToCart = (item: MenuItem) => {
     setCart(prev => {
       const existing = prev.find(c => c.item.id === item.id);
+      const inCart = existing ? existing.quantity : 0;
+      if (inCart >= item.inventory) {
+        // Already at max stock, do not add
+        return prev;
+      }
       if (existing) {
         return prev.map(c =>
           c.item.id === item.id ? { ...c, quantity: c.quantity + 1 } : c
