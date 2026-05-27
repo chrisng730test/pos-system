@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { StatsResponse, DayStats, TopItem, Sale, SaleItem } from '@/types';
 import * as XLSX from 'xlsx';
+import Sidebar from '@/components/Sidebar';
 
 /* ── Helpers ─────────────────────────────────────────── */
 function fmt(n: number) {
@@ -469,86 +470,88 @@ export default function DashboardPage() {
   }, [loadStats]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-4 flex items-center justify-between shadow-lg">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl leading-none">🌿</span>
-          <div>
-            <h1 className="text-xl font-bold leading-tight">Dashboard</h1>
-            <p className="text-xs text-white/70">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={loadStats}
-            title="Refresh"
-            className="bg-white/20 hover:bg-white/30 p-1.5 rounded-lg transition"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.389Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z" clipRule="evenodd" /></svg>
-          </button>
-          {stats && (
-            <div ref={exportMenuRef} className="relative">
-              <button
-                onClick={() => setShowExportMenu(v => !v)}
-                className="text-sm bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
-                Export
-                <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3"><path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg>
-              </button>
-              {showExportMenu && (
-                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 min-w-[140px]">
-                  <button
-                    onClick={() => { exportDashboardPDF(stats); setShowExportMenu(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-red-500"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
-                    PDF
-                  </button>
-                  <button
-                    onClick={() => { exportDashboardXLSX(stats); setShowExportMenu(false); }}
-                    className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-emerald-600"><path fillRule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5Zm4.75 6.75a.75.75 0 0 1 1.5 0v2.546l.943-1.048a.75.75 0 1 1 1.114 1.004l-2.25 2.5a.75.75 0 0 1-1.114 0l-2.25-2.5a.75.75 0 1 1 1.114-1.004l.943 1.048V8.75Z" clipRule="evenodd" /></svg>
-                    Excel (XLSX)
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          <Link
-            href="/"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M1 1.75A.75.75 0 0 1 1.75 1h1.628a1.75 1.75 0 0 1 1.734 1.51L5.18 3a65.25 65.25 0 0 1 13.36 1.412.75.75 0 0 1 .58.875 48.645 48.645 0 0 1-1.618 6.2.75.75 0 0 1-.712.513H6a2.5 2.5 0 0 0-2.5 2.5v.75H14.25a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75V7.5a.75.75 0 0 1 .75-.75h.5l-.276-1.596A.25.25 0 0 0 3.977 5H1.75A.75.75 0 0 1 1 4.25v-2.5ZM6 16.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Zm6.5 1a1 1 0 1 1 2 0 1 1 0 0 1-2 0Z" /></svg>
-            Home
-          </Link>
-          <Link
-            href="/transactions"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M4 3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4Zm0 6a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H4Zm-1 7a1 1 0 0 1 1-1h12a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Z" clipRule="evenodd" /></svg>
-            Transactions
-          </Link>
-          <Link
-            href="/admin"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5"
-          >
-            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.422.587l1.25-.834a1 1 0 0 1 1.262.125l.962.962a1 1 0 0 1 .125 1.262l-.834 1.25c.245.45.443.925.587 1.422l1.473.294a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.587 1.422l.834 1.25a1 1 0 0 1-.125 1.262l-.962.962a1 1 0 0 1-1.262.125l-1.25-.834a6.953 6.953 0 0 1-1.422.587l-.294 1.473a1 1 0 0 1-.98.804H9.32a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.422-.587l-1.25.834a1 1 0 0 1-1.262-.125l-.962-.962a1 1 0 0 1-.125-1.262l.834-1.25a6.957 6.957 0 0 1-.587-1.422L1.804 11.32A1 1 0 0 1 1 10.34V8.98a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.587-1.422l-.834-1.25a1 1 0 0 1 .125-1.262l.962-.962A1 1 0 0 1 5.38 2.684l1.25.834a6.957 6.957 0 0 1 1.422-.587l.289-1.127ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" /></svg>
-            Settings
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-50 flex">
 
-      <div className="max-w-5xl mx-auto p-4 space-y-6">
+      <Sidebar />
+
+      {/* Main content */}
+<div className="flex-1 min-w-0 overflow-x-hidden">
+
+  {/* Top action bar */}
+<div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm flex-shrink-0">
+
+  {/* Left side */}
+  <div className="flex items-center gap-2">
+    <h1 className="text-3xl text-slate-800 text-emerald-800 font-bold px-3 py-1 rounded-lg">
+      Dashboard
+    </h1>
+  </div>
+
+  {/* Right side */}
+  <div className="flex items-center gap-2">
+
+    {/* Refresh button */}
+    <button
+      onClick={loadStats}
+      title="Refresh"
+      className="bg-slate-100 hover:bg-slate-200 p-2 rounded-lg transition"
+    >
+      <svg
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        className="w-4 h-4 text-slate-700"
+      >
+        <path
+          fillRule="evenodd"
+          d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.389Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0V5.36l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </button>
+
+    {/* Export menu */}
+    {stats && (
+      <div ref={exportMenuRef} className="relative">
+
+        <button
+          onClick={() => setShowExportMenu(v => !v)}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition"
+        >
+          Export
+        </button>
+
+        {showExportMenu && (
+          <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 min-w-[150px]">
+
+            <button
+              onClick={() => {
+                exportDashboardPDF(stats);
+                setShowExportMenu(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition"
+            >
+              Export PDF
+            </button>
+
+            <button
+              onClick={() => {
+                exportDashboardXLSX(stats);
+                setShowExportMenu(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition"
+            >
+              Export Excel
+            </button>
+
+          </div>
+        )}
+      </div>
+    )}
+
+  </div>
+</div>
+
+  <div className="max-w-5xl mx-auto p-4 space-y-6">
         {/* Loading / Error states */}
         {loading && (
           <div className="flex items-center justify-center py-24 text-slate-400">
@@ -602,9 +605,10 @@ export default function DashboardPage() {
               <TopItemsTable items={stats.topItems} />
               <RecentSales sales={stats.recentSales} onDelete={() => loadStats()} />
             </div>
-          </>
+               </>
         )}
       </div>
     </div>
-  );
+  </div>
+);
 }

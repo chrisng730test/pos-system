@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import Sidebar from '@/components/Sidebar';
 import { useItems } from '@/hooks/useItems';
 import { useInventoryHistory } from '@/hooks/useInventoryHistory';
 import { MenuItem } from '@/types';
@@ -188,18 +188,34 @@ const handleDelete = (id: string) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-4 flex items-center gap-3 shadow-lg">
-        <Link
-          href="/"
-          className="hover:bg-white/20 p-1.5 rounded-lg transition text-lg leading-none"
-          aria-label="Back to POS"
-        >
-          ←
-        </Link>
-        <h1 className="text-xl font-bold flex items-center gap-2"><span className="text-2xl leading-none">🌿</span> Manage Items</h1>
-      </header>
+  <div className="min-h-screen bg-slate-50 flex">
+
+    <Sidebar />
+
+    <div className="flex-1 min-w-0 overflow-x-hidden">
+      {/* Top action bar */}
+<div className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm flex-shrink-0">
+
+  {/* Left side */}
+  <div className="flex items-center gap-2">
+    <h1 className="text-3xl text-slate-800 text-emerald-800 px-2 py-1.5 rounded-full font-bold">
+      Settings
+    </h1>
+  </div>
+
+  {/* Right side */}
+  <div className="flex items-center gap-2">
+
+    <div className="bg-slate-100 text-slate-700 text-sm font-semibold px-3 py-1.5 rounded-lg">
+      {items.length} item{items.length !== 1 ? 's' : ''}
+    </div>
+
+    <div className="bg-emerald-600 text-white text-sm font-bold px-3 py-1.5 rounded-lg">
+      {history.length} logs
+    </div>
+
+  </div>
+</div>
 
       <div className="max-w-7xl mx-auto p-6">
 
@@ -881,5 +897,6 @@ const handleDelete = (id: string) => {
 )}
       </div>
     </div>
+     </div>
   );
 }
