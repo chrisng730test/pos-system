@@ -527,7 +527,7 @@ const handleDelete = (id: string) => {
         </h2>
       </div>
 
-      <div className="overflow-auto max-h-[700px]">
+      <div className="overflow-x-auto max-h-[700px]">
 
         <table className="w-full text-sm">
           
