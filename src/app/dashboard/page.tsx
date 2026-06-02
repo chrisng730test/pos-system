@@ -20,6 +20,22 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
 
+function paymentLabel(method?: string) {
+  if (method === 'ewallet') return 'e-Wallet';
+  if (method === 'onepay') return '1 Pay';
+  return 'Cash';
+}
+
+function isDigitalPayment(method?: string) {
+  return method === 'ewallet' || method === 'onepay';
+}
+
+function paymentBadgeClass(method?: string) {
+  if (method === 'onepay') return 'bg-red-100 text-red-600';
+  if (method === 'ewallet') return 'bg-blue-100 text-blue-600';
+  return 'bg-emerald-100 text-emerald-700';
+}
+
 /* ── Receipt reprint ─────────────────────────────────── */
 function reprintSale(sale: Sale) {
   if (!sale.items?.length) return;
@@ -48,8 +64,8 @@ function reprintSale(sale: Sale) {
   ${itemRows}
   <hr class="divider">
   <div class="row big"><span>TOTAL</span><span>RM${fmt(sale.total)}</span></div>
-  ${sale.payment_method === 'ewallet'
-    ? `<div class="row" style="color:#2563eb"><span>e-Wallet</span><span>RM${fmt(sale.total)}</span></div>`
+  ${isDigitalPayment(sale.payment_method)
+    ? `<div class="row" style="color:#2563eb"><span>${paymentLabel(sale.payment_method)}</span><span>RM${fmt(sale.total)}</span></div>`
     : `<div class="row muted"><span>Cash Paid</span><span>RM${sale.amount_paid != null ? fmt(sale.amount_paid) : '—'}</span></div>
        <div class="row green"><span>Change</span><span>RM${sale.change_amount != null ? fmt(sale.change_amount) : '—'}</span></div>`
   }
@@ -122,7 +138,7 @@ function exportDashboardXLSX(stats: StatsResponse) {
       s.receipt_no ?? '',
       new Date(s.created_at).toLocaleDateString('en-MY'),
       new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
-      s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash',
+      paymentLabel(s.payment_method),
       s.items?.map(i => `${i.item_name} x${i.quantity}`).join(', ') ?? '',
       s.total,
     ]),
@@ -214,7 +230,7 @@ async function exportDashboardPDF(stats: StatsResponse) {
         s.receipt_no ?? '—',
         new Date(s.created_at).toLocaleDateString('en-MY'),
         new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
-        s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash',
+        paymentLabel(s.payment_method),
         s.total.toFixed(2),
       ]),
       theme: 'striped',
@@ -349,11 +365,9 @@ function RecentSales({ sales, onDelete }: { sales: Sale[]; onDelete: (id: string
                   </span>
                   {sale.payment_method && (
                     <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${
-                      sale.payment_method === 'ewallet'
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-emerald-100 text-emerald-700'
+                      paymentBadgeClass(sale.payment_method)
                     }`}>
-                      {sale.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash'}
+                      {paymentLabel(sale.payment_method)}
                     </span>
                   )}
                   {sale.receipt_no && (

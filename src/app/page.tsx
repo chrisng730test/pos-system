@@ -158,7 +158,7 @@ function PaymentModal({
   onConfirm: (paid: number, paymentMethod: string) => void;
   onCancel: () => void;
 }) {
-  const [step, setStep] = useState<'method' | 'cash' | 'ewallet'>('method');
+  const [step, setStep] = useState<'method' | 'cash' | 'ewallet' | 'onepay'>('method');
   const [tendered, setTendered] = useState('');
 
   const paid = parseFloat(tendered) || 0;
@@ -181,6 +181,7 @@ function PaymentModal({
             {step === 'method' && 'Select payment method'}
             {step === 'cash' && 'Enter cash received'}
             {step === 'ewallet' && 'Confirm e-Wallet payment'}
+            {step === 'onepay' && 'Confirm 1 Pay payment'}
           </p>
         </div>
 
@@ -206,6 +207,15 @@ function PaymentModal({
               >
                 <span className="text-3xl">📱</span>
                 <span className="font-bold text-slate-700">e-Wallet</span>
+              </button>
+              <button
+                onClick={() => setStep('onepay')}
+                className="flex flex-col items-center gap-2 py-6 rounded-xl border-2 border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition"
+              >
+                <span className="flex h-8 items-center justify-center text-[1.4rem] font-black leading-none tracking-[-0.08em] text-red-500">
+                  1PAY
+                </span>
+                <span className="font-bold text-slate-700">1 Pay</span>
               </button>
             </div>
             <button
@@ -284,8 +294,8 @@ function PaymentModal({
           </div>
         )}
 
-        {/* Step: ewallet */}
-        {step === 'ewallet' && (
+        {/* Step: digital wallets */}
+        {(step === 'ewallet' || step === 'onepay') && (
           <div className="p-6 space-y-5">
             <div className="flex justify-between items-center pb-4 border-b border-slate-100">
               <span className="text-slate-500 font-medium">Amount Due</span>
@@ -296,7 +306,7 @@ function PaymentModal({
               <p className="text-blue-700 text-sm">
                 Please ensure{' '}
                 <span className="font-bold">RM{total.toFixed(2)}</span>{' '}
-                has been received in the e-Wallet app before confirming.
+                has been received in the {step === 'onepay' ? '1 Pay' : 'e-Wallet'} app before confirming.
               </p>
             </div>
             <div className="flex gap-3">
@@ -307,7 +317,7 @@ function PaymentModal({
                 ← Back
               </button>
               <button
-                onClick={() => onConfirm(total, 'ewallet')}
+                onClick={() => onConfirm(total, step)}
                 className="flex-[2] py-3.5 rounded-xl bg-blue-600 text-white font-bold text-base hover:bg-blue-700 transition shadow-lg shadow-blue-200"
               >
                 Payment Received ✓
@@ -333,8 +343,8 @@ function printReceipt(data: ReceiptData) {
     )
     .join('');
 
-  const paymentRows = data.paymentMethod === 'ewallet'
-    ? `<div class="row blue"><span>📱 e-Wallet</span><span>RM${data.total.toFixed(2)}</span></div>`
+  const paymentRows = data.paymentMethod === 'ewallet' || data.paymentMethod === 'onepay'
+    ? `<div class="row blue"><span>${data.paymentMethod === 'onepay' ? '1 Pay' : 'e-Wallet'}</span><span>RM${data.total.toFixed(2)}</span></div>`
     : `<div class="row muted"><span>Cash</span><span>RM${data.paid.toFixed(2)}</span></div>
   <div class="row green"><span>Change</span><span>RM${data.change.toFixed(2)}</span></div>`;
 
@@ -406,9 +416,9 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
               <span>TOTAL</span>
               <span>RM{data.total.toFixed(2)}</span>
             </div>
-            {data.paymentMethod === 'ewallet' ? (
+            {data.paymentMethod === 'ewallet' || data.paymentMethod === 'onepay' ? (
               <div className="flex justify-between text-blue-600 font-bold">
-                <span>📱 e-Wallet</span>
+                <span>{data.paymentMethod === 'onepay' ? '1 Pay' : 'e-Wallet'}</span>
                 <span>RM{data.total.toFixed(2)}</span>
               </div>
             ) : (

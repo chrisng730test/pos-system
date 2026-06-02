@@ -6,6 +6,22 @@ import { Sale, SaleItem } from '@/types';
 import * as XLSX from 'xlsx';
 import Sidebar from '@/components/Sidebar';
 
+function paymentLabel(method?: string) {
+  if (method === 'ewallet') return 'e-Wallet';
+  if (method === 'onepay') return '1 Pay';
+  return 'Cash';
+}
+
+function isDigitalPayment(method?: string) {
+  return method === 'ewallet' || method === 'onepay';
+}
+
+function paymentBadgeClass(method?: string) {
+  if (method === 'onepay') return 'bg-red-100 text-red-600';
+  if (method === 'ewallet') return 'bg-blue-100 text-blue-600';
+  return 'bg-emerald-100 text-emerald-700';
+}
+
 function exportTransactionsXLSX(sales: Sale[]) {
   const header = ['#', 'Receipt No', 'Date', 'Time', 'Payment', 'Item', 'Qty', 'Unit Price (RM)', 'Subtotal (RM)', 'Total (RM)'];
   const rows: (string | number)[][] = [header];
@@ -15,7 +31,7 @@ function exportTransactionsXLSX(sales: Sale[]) {
     const items = s.items ?? [];
     const date = new Date(s.created_at).toLocaleDateString('en-MY');
     const time = new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-    const payment = s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash';
+    const payment = paymentLabel(s.payment_method);
 
     if (items.length === 0) {
       rows.push([txnNo, s.receipt_no ?? '', date, time, payment, '', '', '', '', s.total]);
@@ -63,7 +79,7 @@ async function exportTransactionsPDF(sales: Sale[]) {
   for (const [txnIdx, s] of sales.entries()) {
     const dtDate = new Date(s.created_at).toLocaleDateString('en-MY');
     const dtTime = new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-    const payment = s.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash';
+    const payment = paymentLabel(s.payment_method);
 
     // Transaction header row spanning all columns
     body.push([{
@@ -120,7 +136,7 @@ function reprintSale(sale: Sale) {
     )
     .join('');
   const receiptNo = sale.receipt_no ?? '—';
-  const isEwallet = sale.payment_method === 'ewallet';
+  const isDigital = isDigitalPayment(sale.payment_method);
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt ${receiptNo}</title>
 <style>
   body{font-family:monospace;font-size:14px;padding:24px;max-width:320px;margin:0 auto}
@@ -139,8 +155,8 @@ function reprintSale(sale: Sale) {
   ${itemRows}
   <hr class="divider">
   <div class="row big"><span>TOTAL</span><span>RM${fmt(sale.total)}</span></div>
-  ${isEwallet
-    ? `<div class="row" style="color:#2563eb"><span>e-Wallet</span><span>RM${fmt(sale.total)}</span></div>`
+  ${isDigital
+    ? `<div class="row" style="color:#2563eb"><span>${paymentLabel(sale.payment_method)}</span><span>RM${fmt(sale.total)}</span></div>`
     : `<div class="row muted"><span>Cash Paid</span><span>RM${sale.amount_paid != null ? fmt(sale.amount_paid) : '—'}</span></div>
        <div class="row green"><span>Change</span><span>RM${sale.change_amount != null ? fmt(sale.change_amount) : '—'}</span></div>`
   }
@@ -200,12 +216,10 @@ function TxRow({
             {sale.payment_method && (
               <span
                 className={`text-xs rounded-full px-2 py-0.5 font-medium ${
-                  sale.payment_method === 'ewallet'
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'bg-emerald-100 text-emerald-700'
+                  paymentBadgeClass(sale.payment_method)
                 }`}
               >
-                {sale.payment_method === 'ewallet' ? 'e-Wallet' : 'Cash'}
+                {paymentLabel(sale.payment_method)}
               </span>
             )}
           </div>
