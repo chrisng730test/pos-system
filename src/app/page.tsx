@@ -523,7 +523,7 @@ export default function POSPage() {
   {/* Page title */}
   <div className="flex items-center gap-2">
     <h1 className="text-3xl text-slate-800text-emerald-800 px-2 py-1.5 rounded-full font-bold">
-      Home
+      Cart
     </h1>
   </div>
 
