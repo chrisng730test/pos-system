@@ -457,7 +457,7 @@ function ReceiptModal({ data, onClose }: { data: ReceiptData; onClose: () => voi
 }
 
 export default function POSPage() {
-  const { items, categories, loaded } = useItems();
+  const { items, categories, loaded, fetchItems } = useItems();
   const { cart, addToCart, decreaseQuantity, setQuantity, removeFromCart, clearCart, total, itemCount } =
     useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -472,7 +472,7 @@ export default function POSPage() {
     setPayStep('payment');
   };
 
-  const handleConfirmPayment = (paid: number, paymentMethod: string) => {
+  const handleConfirmPayment = async (paid: number, paymentMethod: string) => {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
     const rand = Math.floor(Math.random() * 9000 + 1000);
@@ -485,11 +485,17 @@ export default function POSPage() {
       quantity: c.quantity,
     }));
 
-    fetch('/api/sales', {
+    const response = await fetch('/api/sales', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: crypto.randomUUID(), receipt_no: receiptNo, total, items: saleItems, payment_method: paymentMethod, amount_paid: paid, change_amount: paid - total }),
-    }).catch(console.error);
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save transaction');
+    }
+
+    await fetchItems();
 
     setReceiptData({ receiptNo, createdAt: now.toISOString(), items: [...cart], total, paid, change: paid - total, paymentMethod });
     setPayStep('receipt');

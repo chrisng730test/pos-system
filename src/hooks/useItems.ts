@@ -53,5 +53,5 @@ export function useItems() {
 
   const categories = [...new Set(items.map(i => i.category))].filter(Boolean);
 
-  return { items, addItem, updateItem, deleteItem, categories, loaded };
+  return { items, addItem, updateItem, deleteItem, categories, loaded, fetchItems };
 }
