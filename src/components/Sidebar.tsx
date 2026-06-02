@@ -41,10 +41,29 @@ export default function Sidebar() {
         </button>
       </div>
       <nav className="flex-1 flex flex-col gap-1 px-2 mt-2">
-        <Link href="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition font-medium hover:bg-white/10 ${sidebarOpen ? '' : 'justify-center'}`}> 
-          <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path d="M3 3.75A.75.75 0 0 1 3.75 3h12.5a.75.75 0 0 1 0 1.5H15v10h1.25a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1 0-1.5H5v-6.25A1.25 1.25 0 0 1 6.25 7h1.5A1.25 1.25 0 0 1 9 8.25v6.25h2V5.25A1.25 1.25 0 0 1 12.25 4h1.5A1.25 1.25 0 0 1 15 5.25v9.25h1.25A.75.75 0 0 1 17 15.25v.5a.75.75 0 0 1-.75.75H3.75A.75.75 0 0 1 3 15.75v-.5a.75.75 0 0 1 .75-.75H5V8.25A1.25 1.25 0 0 1 6.25 7h1.5A1.25 1.25 0 0 1 9 8.25v6.25h2V5.25A1.25 1.25 0 0 1 12.25 4h1.5A1.25 1.25 0 0 1 15 5.25v9.25H5V4.5H3.75A.75.75 0 0 1 3 3.75Z" /></svg>
-          {sidebarOpen && <span>Dashboard</span>}
-        </Link>
+        <Link
+  href="/dashboard"
+  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition font-medium hover:bg-white/10 ${
+    sidebarOpen ? '' : 'justify-center'
+  }`}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={2}
+    stroke="currentColor"
+    className="w-5 h-5"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3.75 3.75h6v6h-6v-6Zm10.5 0h6v6h-6v-6Zm-10.5 10.5h6v6h-6v-6Zm10.5-2.25h6v8.25h-6V12Z"
+    />
+  </svg>
+
+  {sidebarOpen && <span>Dashboard</span>}
+</Link>
         <Link
   href="/"
   className={`flex items-center ${
@@ -55,20 +74,23 @@ export default function Sidebar() {
 >
 
   <div className="w-5 h-5 flex items-center justify-center shrink-0">
-    <svg
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      className="w-5 h-5"
-    >
-      <path
-        fillRule="evenodd"
-        d="M9.69 2.293a1 1 0 0 1 1.02 0l7 4A1 1 0 0 1 18 7.118V16a2 2 0 0 1-2 2h-3a1 1 0 0 1-1-1v-4H8v4a1 1 0 0 1-1 1H4a2 2 0 0 1-2-2V7.118a1 1 0 0 1 .29-.825l7-4ZM4 7.699V16h2v-4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v4h2V7.699l-6-3.429-6 3.43Z"
-        clipRule="evenodd"
-      />
-    </svg>
-  </div>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={2}
+    stroke="currentColor"
+    className="w-5 h-5"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M2.25 3h1.386c.51 0 .955.343 1.087.836L5.76 8.25m0 0h12.99c.75 0 1.398-.52 1.562-1.252l1.242-5.498H6.228m-.468 6.75L4.5 15a1.5 1.5 0 001.5 1.5h12m-12 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm12 0a1.5 1.5 0 100 3 1.5 1.5 0 000-3z"
+    />
+  </svg>
+</div>
 
-  {sidebarOpen && <span>Home</span>}
+  {sidebarOpen && <span>Cart</span>}
 </Link>
         <Link href="/transactions" className={`flex items-center gap-3 px-3 py-2 rounded-lg transition font-medium hover:bg-white/10 ${sidebarOpen ? '' : 'justify-center'}`}> 
           <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M4 3a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H4Zm0 6a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H4Zm-1 7a1 1 0 0 1 1-1h12a1 1 0 0 1 0 2H4a1 1 0 0 1-1-1Z" clipRule="evenodd" /></svg>
