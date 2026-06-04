@@ -46,7 +46,13 @@ export function useCart() {
       removeFromCart(itemId);
       return;
     }
-    setCart(prev => prev.map(c => c.item.id === itemId ? { ...c, quantity: qty } : c));
+    setCart(prev =>
+      prev.map(c => {
+        if (c.item.id !== itemId) return c;
+        const cappedQty = Math.min(qty, c.item.inventory);
+        return { ...c, quantity: cappedQty };
+      }),
+    );
   };
 
   const clearCart = () => setCart([]);

@@ -96,6 +96,7 @@ function CartContent({
                   <input
                     type="number"
                     min={1}
+                    max={item.inventory}
                     value={quantity}
                     onChange={e => {
                       const v = parseInt(e.target.value, 10);
