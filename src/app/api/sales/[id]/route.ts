@@ -15,7 +15,16 @@ export async function DELETE(
     const sale = db.prepare('SELECT id FROM sales WHERE id = ?').get(id);
     if (!sale) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+    const soldItems = db
+      .prepare('SELECT item_id, quantity FROM sale_items WHERE sale_id = ?')
+      .all(id) as Array<{ item_id: string; quantity: number }>;
+
+    const restoreInventory = db.prepare('UPDATE items SET inventory = inventory + ? WHERE id = ?');
+
     db.transaction(() => {
+      for (const item of soldItems) {
+        restoreInventory.run(item.quantity, item.item_id);
+      }
       db.prepare('DELETE FROM sale_items WHERE sale_id = ?').run(id);
       db.prepare('DELETE FROM sales WHERE id = ?').run(id);
     })();

@@ -327,6 +327,8 @@ function RecentSales({ sales, onDelete }: { sales: Sale[]; onDelete: (id: string
   const [confirming, setConfirming] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  const displayed = sales.slice(0, 6);
+
   async function handleDelete(id: string) {
     setDeleting(id);
     try {
@@ -352,7 +354,7 @@ function RecentSales({ sales, onDelete }: { sales: Sale[]; onDelete: (id: string
         <h3 className="text-sm font-semibold text-slate-700">Recent Transactions</h3>
       </div>
       <ul className="divide-y divide-slate-100">
-        {sales.map(sale => (
+        {displayed.map(sale => (
           <li key={sale.id}>
             <div className="flex items-center hover:bg-slate-50 transition">
               <button
@@ -441,6 +443,15 @@ function RecentSales({ sales, onDelete }: { sales: Sale[]; onDelete: (id: string
           </li>
         ))}
       </ul>
+      <div className="px-5 py-3 border-t border-slate-100">
+        <Link
+          href="/transactions"
+          className="flex items-center justify-center gap-1.5 w-full text-sm font-medium text-emerald-600 hover:text-emerald-700 transition"
+        >
+          More Transactions
+          <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clipRule="evenodd" /></svg>
+        </Link>
+      </div>
     </div>
   );
 }
