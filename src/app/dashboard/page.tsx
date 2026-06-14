@@ -36,6 +36,12 @@ function paymentBadgeClass(method?: string) {
   return 'bg-emerald-100 text-emerald-700';
 }
 
+const CHINESE_CHAR_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/g;
+
+function sanitizePdfText(value: unknown) {
+  return String(value ?? '').replace(CHINESE_CHAR_REGEX, '');
+}
+
 /* ── Receipt reprint ─────────────────────────────────── */
 function reprintSale(sale: Sale) {
   if (!sale.items?.length) return;
@@ -158,27 +164,27 @@ async function exportDashboardPDF(stats: StatsResponse) {
 
   doc.setFontSize(18);
   doc.setTextColor(5, 150, 105); // emerald
-  doc.text('ZYN POS — Dashboard Report', 14, y);
+  doc.text(sanitizePdfText('ZYN POS — Dashboard Report'), 14, y);
   y += 7;
   doc.setFontSize(9);
   doc.setTextColor(100);
-  doc.text(`Generated: ${date}`, 14, y);
+  doc.text(sanitizePdfText(`Generated: ${date}`), 14, y);
   y += 8;
 
   // Summary
   doc.setFontSize(12);
   doc.setTextColor(30);
-  doc.text('Summary', 14, y);
+  doc.text(sanitizePdfText('Summary'), 14, y);
   y += 3;
   autoTable(doc, {
     startY: y,
     head: [['Metric', 'Value']],
     body: [
-      ["Today's Revenue", `RM ${stats.today.revenue.toFixed(2)}`],
-      ["Today's Transactions", String(stats.today.transactions)],
-      ["Today's Items Sold", String(stats.today.items_sold)],
-      ['Week Revenue', `RM ${stats.week.reduce((s, d) => s + d.revenue, 0).toFixed(2)}`],
-      ['Week Transactions', String(stats.week.reduce((s, d) => s + d.transactions, 0))],
+      [sanitizePdfText("Today's Revenue"), sanitizePdfText(`RM ${stats.today.revenue.toFixed(2)}`)],
+      [sanitizePdfText("Today's Transactions"), sanitizePdfText(String(stats.today.transactions))],
+      [sanitizePdfText("Today's Items Sold"), sanitizePdfText(String(stats.today.items_sold))],
+      [sanitizePdfText('Week Revenue'), sanitizePdfText(`RM ${stats.week.reduce((s, d) => s + d.revenue, 0).toFixed(2)}`)],
+      [sanitizePdfText('Week Transactions'), sanitizePdfText(String(stats.week.reduce((s, d) => s + d.transactions, 0)))],
     ],
     theme: 'striped',
     headStyles: { fillColor: [5, 150, 105] },
@@ -188,12 +194,17 @@ async function exportDashboardPDF(stats: StatsResponse) {
 
   // 7-Day Revenue
   doc.setFontSize(12);
-  doc.text('7-Day Revenue', 14, y);
+  doc.text(sanitizePdfText('7-Day Revenue'), 14, y);
   y += 3;
   autoTable(doc, {
     startY: y,
     head: [['Date', 'Revenue (RM)', 'Transactions', 'Items Sold']],
-    body: stats.week.map(d => [d.date, d.revenue.toFixed(2), d.transactions, d.items_sold]),
+    body: stats.week.map(d => [
+      sanitizePdfText(d.date),
+      sanitizePdfText(d.revenue.toFixed(2)),
+      sanitizePdfText(String(d.transactions)),
+      sanitizePdfText(String(d.items_sold)),
+    ]),
     theme: 'striped',
     headStyles: { fillColor: [5, 150, 105] },
     margin: { left: 14, right: 14 },
@@ -204,12 +215,17 @@ async function exportDashboardPDF(stats: StatsResponse) {
   if (stats.topItems.length > 0) {
     if (y > 220) { doc.addPage(); y = 15; }
     doc.setFontSize(12);
-    doc.text('Top Items (last 30 days)', 14, y);
+    doc.text(sanitizePdfText('Top Items (last 30 days)'), 14, y);
     y += 3;
     autoTable(doc, {
       startY: y,
       head: [['#', 'Item Name', 'Qty Sold', 'Revenue (RM)']],
-      body: stats.topItems.map((item, i) => [i + 1, item.item_name, item.quantity, item.revenue.toFixed(2)]),
+      body: stats.topItems.map((item, i) => [
+        sanitizePdfText(String(i + 1)),
+        sanitizePdfText(item.item_name) || '-',
+        sanitizePdfText(String(item.quantity)),
+        sanitizePdfText(item.revenue.toFixed(2)),
+      ]),
       theme: 'striped',
       headStyles: { fillColor: [5, 150, 105] },
       margin: { left: 14, right: 14 },
@@ -221,17 +237,17 @@ async function exportDashboardPDF(stats: StatsResponse) {
   if (stats.recentSales.length > 0) {
     if (y > 220) { doc.addPage(); y = 15; }
     doc.setFontSize(12);
-    doc.text('Recent Transactions', 14, y);
+    doc.text(sanitizePdfText('Recent Transactions'), 14, y);
     y += 3;
     autoTable(doc, {
       startY: y,
       head: [['Receipt No', 'Date', 'Time', 'Payment', 'Total (RM)']],
       body: stats.recentSales.map(s => [
-        s.receipt_no ?? '—',
-        new Date(s.created_at).toLocaleDateString('en-MY'),
-        new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' }),
-        paymentLabel(s.payment_method),
-        s.total.toFixed(2),
+        sanitizePdfText(s.receipt_no ?? '—') || '—',
+        sanitizePdfText(new Date(s.created_at).toLocaleDateString('en-MY')),
+        sanitizePdfText(new Date(s.created_at).toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' })),
+        sanitizePdfText(paymentLabel(s.payment_method)),
+        sanitizePdfText(s.total.toFixed(2)),
       ]),
       theme: 'striped',
       headStyles: { fillColor: [5, 150, 105] },

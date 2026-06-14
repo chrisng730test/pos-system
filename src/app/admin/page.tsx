@@ -558,7 +558,7 @@ const handleDelete = (id: string) => {
                 <td className="px-5 py-4">
                   {/* Modern monochrome trash (delete) icon */}
                     <button
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => deleteInventoryLog(log.id)}
                       className="w-9 h-9 rounded-xl hover:bg-slate-100 text-slate-500 transition flex items-center justify-center"
                       title="Delete"
                     >

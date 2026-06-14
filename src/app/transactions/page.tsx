@@ -22,6 +22,12 @@ function paymentBadgeClass(method?: string) {
   return 'bg-emerald-100 text-emerald-700';
 }
 
+const CHINESE_CHAR_REGEX = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/g;
+
+function sanitizePdfText(value: unknown) {
+  return String(value ?? '').replace(CHINESE_CHAR_REGEX, '');
+}
+
 function exportTransactionsXLSX(sales: Sale[]) {
   const header = ['#', 'Receipt No', 'Date', 'Time', 'Payment', 'Item', 'Qty', 'Unit Price (RM)', 'Subtotal (RM)', 'Total (RM)'];
   const rows: (string | number)[][] = [header];
@@ -69,9 +75,9 @@ async function exportTransactionsPDF(sales: Sale[]) {
   const doc = new jsPDF();
   const date = new Date().toISOString().slice(0, 10);
   doc.setFontSize(16);
-  doc.text('Transactions', 14, 18);
+  doc.text(sanitizePdfText('Transactions'), 14, 18);
   doc.setFontSize(10);
-  doc.text(`Generated: ${new Date().toLocaleString('en-MY')}`, 14, 25);
+  doc.text(sanitizePdfText(`Generated: ${new Date().toLocaleString('en-MY')}`), 14, 25);
 
   type AutoTableCell = { content: string; colSpan?: number; styles?: Record<string, unknown> };
   const body: (string | AutoTableCell)[][] = [];
@@ -83,7 +89,9 @@ async function exportTransactionsPDF(sales: Sale[]) {
 
     // Transaction header row spanning all columns
     body.push([{
-      content: `#${txnIdx + 1}   ${s.receipt_no ?? '—'}   ${dtDate} ${dtTime}   ${payment}   Total: RM${s.total.toFixed(2)}`,
+      content: sanitizePdfText(
+        `#${txnIdx + 1}   ${s.receipt_no ?? '—'}   ${dtDate} ${dtTime}   ${payment}   Total: RM${s.total.toFixed(2)}`,
+      ),
       colSpan: 5,
       styles: { fillColor: [239, 246, 255], fontStyle: 'bold', textColor: [30, 64, 175], fontSize: 8.5 },
     }]);
@@ -92,10 +100,10 @@ async function exportTransactionsPDF(sales: Sale[]) {
     for (const item of s.items ?? []) {
       body.push([
         '',
-        item.item_name,
-        String(item.quantity),
-        item.item_price.toFixed(2),
-        (item.item_price * item.quantity).toFixed(2),
+        sanitizePdfText(item.item_name) || '-',
+        sanitizePdfText(String(item.quantity)),
+        sanitizePdfText(item.item_price.toFixed(2)),
+        sanitizePdfText((item.item_price * item.quantity).toFixed(2)),
       ]);
     }
   }
